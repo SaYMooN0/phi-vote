@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="sbt: org.scala-sbt:compiler-interface:1.3.5:jar" type="java-imported" external-system-id="SBT">
+    <properties groupId="org.scala-sbt" artifactId="compiler-interface" version="1.3.5" baseVersion="1.3.5" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.3.5/compiler-interface-1.3.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/AppData/Local/Coursier/cache/v1/https/repo1.maven.org/maven2/org/scala-sbt/compiler-interface/1.3.5/compiler-interface-1.3.5-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

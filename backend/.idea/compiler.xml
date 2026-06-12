@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="backend.auth-service.main" target="21" />
+      <module name="backend.auth-service.test" target="21" />
+      <module name="backend.shared.main" target="21" />
+      <module name="backend.shared.test" target="21" />
+      <module name="backend.voting-service.main" target="21" />
+      <module name="backend.voting-service.test" target="21" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

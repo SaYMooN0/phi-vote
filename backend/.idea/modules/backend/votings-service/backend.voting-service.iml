@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.linked.project.id="votingService [file:///E:/phivote/backend/]" external.linked.project.path="E:\phivote\backend\voting-service" external.root.project.path="$MODULE_DIR$/../../../.." external.system.id="SBT" external.system.module.type="nestedProject" type="JAVA_MODULE" version="4">
+  <component name="DisplayModuleName">
+    <option name="name" value="voting-service" />
+  </component>
+  <component name="NewModuleRootManager" LANGUAGE_LEVEL="JDK_21" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../../../voting-service">
+      <excludeFolder url="file://$MODULE_DIR$/../../../../voting-service/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="backend.voting-service.main" />
+    <orderEntry type="module" module-name="backend.voting-service.test" production-on-test="" />
+  </component>
+</module>

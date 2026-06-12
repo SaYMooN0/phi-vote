@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-m-p: #ab7dfc;
+  --color-m-p-hov: #524DDB;
+  --spacing:0.25rem;
+}
