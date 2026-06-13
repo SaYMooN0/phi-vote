@@ -8,11 +8,11 @@ import zio.json.ast.Json
 
 trait ResponseErr {
 
-  protected def errKey: String;
+  protected def errKey: String
 
-  protected def status: Status;
+  protected def status: Status
 
-  protected def payload: Json.Obj;
+  protected def payload: Json.Obj
 
   private final def toJson: String = Json
     .Obj(
