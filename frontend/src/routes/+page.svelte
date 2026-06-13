@@ -1,22 +1,16 @@
 <script lang="ts">
-	import { ApiAuth, ApiVoting, toCoreLikeErr, type BackendE } from '$lib/ts/backend';
-	import { toast } from 'svelte-sonner';
+	import { ApiAuth, ApiVoting, type InvalidInputErr } from '$lib/ts/backend';
 
 	async function handleAuth() {
-		const promise = ApiAuth.GET<BackendE, { healthMsg: string }>('/health').then((res) => {
-			if (res.isOk) {
-				return res.healthMsg;
+		const result = await ApiAuth.GET<InvalidInputErr, { healthMsg: string }>('');
+		if (result.isOk) {
+			console.log(result);
+		} else {
+			if (result.errKey === 'InvalidInput') {
+				console.log("------");
+				console.log(result);
 			}
-			const err = toCoreLikeErr(res);
-			const errMsg = err.isBackendFetchErr ? err.msg : 'Unknown error';
-			throw errMsg;
-		});
-
-		toast.promise(promise, {
-			loading: 'Loading...',
-			success: (msg) => msg,
-			error: (msg) => msg as string
-		});
+		}
 	}
 
 	async function handleVoting() {

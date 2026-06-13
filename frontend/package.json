@@ -35,6 +35,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"runed": "^0.37.1",
 		"svelte-sonner": "^1.1.1"
 	}
 }

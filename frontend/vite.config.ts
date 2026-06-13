@@ -5,10 +5,36 @@ import fs from 'fs';
 import path from 'path';
 
 
-const COMPONENTS_FOLDER_PREF = '_c_';
-const TS_FOLDER_PREF = '_ts_';
+export default defineConfig({
+	plugins: [
+		sveltekit(),
+		tailwindcss(),
+		forbiddenFileStructurePlugin()
+	],
+	server: {
+		proxy: {
+			...createProxyEntry('/api/auth', 8180),
+			...createProxyEntry('/api/voting', 8181)
+		}
+	}
+});
 
-const forbiddenFileStructurePlugin = () => {
+const COMPONENTS_FOLDER_PREF = '_c';
+const TS_FOLDER_PREF = '_ts';
+
+function hasFolderPrefix(name: string, pref: string): boolean {
+	return name === pref || name.startsWith(`${pref}_`);
+}
+
+function isComponentsFolderName(name: string): boolean {
+	return hasFolderPrefix(name, COMPONENTS_FOLDER_PREF);
+}
+
+function isTSFolderName(name: string): boolean {
+	return hasFolderPrefix(name, TS_FOLDER_PREF);
+}
+
+function forbiddenFileStructurePlugin() {
 	return {
 		name: 'validate-file-structure',
 		buildStart() {
@@ -23,7 +49,6 @@ const forbiddenFileStructurePlugin = () => {
 		}
 	};
 };
-
 function checkFiles(
 	dir: string,
 	insideComponentsFolder: boolean,
@@ -37,6 +62,7 @@ function checkFiles(
 		if (/[а-яА-ЯёЁ]/.test(entry.name)) {
 			throw new Error(`Cyrillic characters are not allowed: ${fullPath}`);
 		}
+
 		if (entry.isFile()) {
 			if (insideComponentsFolder && entry.name.startsWith('+')) {
 				throw new Error(
@@ -52,8 +78,8 @@ function checkFiles(
 		}
 
 		if (entry.isDirectory()) {
-			const isComponentsFolder = entry.name.startsWith(COMPONENTS_FOLDER_PREF);
-			const isTSFolder = entry.name.startsWith(TS_FOLDER_PREF);
+			const isComponentsFolder = isComponentsFolderName(entry.name);
+			const isTSFolder = isTSFolderName(entry.name);
 
 			if (
 				insideComponentsFolder &&
@@ -71,16 +97,19 @@ function checkFiles(
 					`'${TS_FOLDER_PREF}' folders cannot contain '${COMPONENTS_FOLDER_PREF}' folders: ${fullPath}`
 				);
 			}
+
 			if (
 				entry.name.startsWith('_') &&
-				!entry.name.startsWith(COMPONENTS_FOLDER_PREF) &&
-				!entry.name.startsWith(TS_FOLDER_PREF)
+				!isComponentsFolder &&
+				!isTSFolder
 			) {
 				throw new Error(
 					`Folders starting with '_' must use a valid prefix ` +
-					`('${COMPONENTS_FOLDER_PREF}' or '${TS_FOLDER_PREF}'): ${fullPath}`
+					`('${COMPONENTS_FOLDER_PREF}', '${COMPONENTS_FOLDER_PREF}_...', ` +
+					`'${TS_FOLDER_PREF}' or '${TS_FOLDER_PREF}_...'): ${fullPath}`
 				);
 			}
+
 			checkFiles(
 				fullPath,
 				insideComponentsFolder || isComponentsFolder,
@@ -108,17 +137,3 @@ function createProxyEntry(
 		}
 	};
 }
-
-export default defineConfig({
-	plugins: [
-		sveltekit(),
-		tailwindcss(),
-		forbiddenFileStructurePlugin()
-	],
-	server: {
-		proxy: {
-			...createProxyEntry('/api/auth', 8180),
-			...createProxyEntry('/api/voting', 8181)
-		}
-	}
-});
