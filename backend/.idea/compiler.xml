@@ -5,7 +5,9 @@
       <module name="backend.auth-service.main" target="21" />
       <module name="backend.auth-service.test" target="21" />
       <module name="backend.shared.main" target="21" />
+      <module name="backend.shared.main~1" target="21" />
       <module name="backend.shared.test" target="21" />
+      <module name="backend.shared.test~1" target="21" />
       <module name="backend.voting-service.main" target="21" />
       <module name="backend.voting-service.test" target="21" />
     </bytecodeTargetLevel>

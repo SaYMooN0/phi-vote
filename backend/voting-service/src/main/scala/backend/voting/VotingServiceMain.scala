@@ -1,6 +1,5 @@
 package backend.voting
 
-import backend.shared.ServiceInfo
 import zio.*
 import zio.http.*
 
