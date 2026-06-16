@@ -6,7 +6,7 @@ target
 .ensime_snapshot
 ensime.sbt
 TAGS
-\#*#
+/#*#
 *~
 .#*
 .lib
@@ -39,4 +39,6 @@ pulsarconf/connectors/*.nar
 nix-parcel/
 nix-parcel-cache/
 *.iml
-.idea/libraries
+.iml
+.idea/libraries/
+.idea/modules/

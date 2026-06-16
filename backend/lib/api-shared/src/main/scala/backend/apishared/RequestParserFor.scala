@@ -5,8 +5,7 @@ import zio.http.Body
 import zio.json.{DecoderOps, JsonDecoder}
 import zio.{IO, ZIO}
 
-trait RequestParserFor[Raw: JsonDecoder] {
-  type Parsed
+trait RequestParserFor[Parsed, Raw: JsonDecoder] {
 
   protected def fromRawToParsed(req: Raw): IO[InvalidInputRespErr, Parsed]
 

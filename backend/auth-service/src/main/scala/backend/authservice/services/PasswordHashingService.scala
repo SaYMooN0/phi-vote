@@ -11,6 +11,9 @@ trait PasswordHashingService {
 
 class PasswordHashingServiceLive() extends PasswordHashingService {
 
+  override def hash(password: String): Task[String] = ???
+
+  override def verify(passwordToVerify: String, hash: String): Task[Boolean] = ???
 }
 
 object PasswordHashingServiceLive {

@@ -7,8 +7,7 @@ object VotingServiceMain extends ZIOAppDefault {
 
   private val routes =
     Routes(
-      Method.GET / "health" ->
-        handler(Response.text(ServiceInfo.health("voting-service")))
+      Method.GET / "health" -> handler(Response.text("ok"))
     )
 
   override def run: ZIO[Any, Throwable, Unit] =

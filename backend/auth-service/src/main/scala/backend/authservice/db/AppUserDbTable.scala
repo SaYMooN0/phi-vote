@@ -1,13 +1,15 @@
 package backend.authservice.db
 
+import backend.dbshared.DbTable
+
 import java.time.Instant
 import java.util.UUID
 
-object AppUserDbTable extends DbTable {
+object AppUserDbTable extends DbTable[AppUserDb] {
   override val name: String = "app_user"
-  override protected type TableEntity = AppUser
+}
 
-  case class AppUser(
+case class AppUserDb(
                       id: UUID,
                       uniqueName: String,
                       email: String,
@@ -15,4 +17,3 @@ object AppUserDbTable extends DbTable {
                       createdAt: Instant,
                       registrationDate: Instant
                     )
-}

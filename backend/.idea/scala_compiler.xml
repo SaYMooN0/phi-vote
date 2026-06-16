@@ -2,13 +2,13 @@
 <project version="4">
   <component name="ScalaCompilerConfiguration">
     <option name="separateProdTestSources" value="true" />
-    <profile name="sbt 1" modules="backend,backend.api-shared,backend.auth-service,backend.main,backend.main~1,backend.shared,backend.test,backend.test~1,backend.voting-service,backend.votings-service,backend_4938,backend_4938.main,backend_4938.test,lib,lib.main,lib.test" />
+    <profile name="sbt 1" modules="backend,backend.api-shared,backend.auth-service,backend.db-shared,backend.lib,backend.lib.main,backend.lib.test,backend.main,backend.main~1,backend.shared,backend.test,backend.test~1,backend.voting-service,backend.votings-service,backend_4938,backend_4938.main,backend_4938.test,db-shared,db-shared.main,db-shared.test,lib,lib.main,lib.test" />
     <profile name="sbt 2" modules="backend.votings-service.main,backend.votings-service.test">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <option name="featureWarnings" value="true" />
     </profile>
-    <profile name="sbt 3" modules="backend.api-shared.main,backend.api-shared.test,backend.auth-service.main,backend.auth-service.main~1,backend.auth-service.test,backend.auth-service.test~1,backend.shared.main,backend.shared.main~1,backend.shared.test,backend.shared.test~1,backend.voting-service.main,backend.voting-service.main~1,backend.voting-service.test,backend.voting-service.test~1">
+    <profile name="sbt 3" modules="backend.api-shared.main,backend.api-shared.test,backend.auth-service.main,backend.auth-service.main~1,backend.auth-service.test,backend.auth-service.test~1,backend.db-shared.main,backend.db-shared.test,backend.shared.main,backend.shared.main~1,backend.shared.test,backend.shared.test~1,backend.voting-service.main,backend.voting-service.main~1,backend.voting-service.test,backend.voting-service.test~1">
       <option name="deprecationWarnings" value="true" />
       <option name="uncheckedWarnings" value="true" />
       <option name="featureWarnings" value="true" />

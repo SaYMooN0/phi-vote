@@ -36,10 +36,21 @@ lazy val dockerSettings = Seq(
 )
 
 lazy val root = (project in file("."))
-  .aggregate(apiShared, authService, votingService)
+  .aggregate(apiShared, dbShared, authService, votingService)
   .settings(
     name := "backend",
     publish / skip := true
+  )
+
+lazy val dbShared = (project in file("./lib/db-shared"))
+  .settings(commonSettings)
+  .settings(
+    name := "db-shared",
+
+    libraryDependencies ++= Seq(
+      "io.getquill" %% "quill-jdbc-zio" % quillVersion,
+      "org.postgresql" % "postgresql" % postgresVersion
+    ),
   )
 
 lazy val apiShared = (project in file("./lib/api-shared"))
@@ -57,14 +68,13 @@ lazy val apiShared = (project in file("./lib/api-shared"))
 lazy val authService = (project in file("auth-service"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(apiShared)
+  .dependsOn(dbShared)
   .settings(commonSettings)
   .settings(dockerSettings)
   .settings(
     name := "auth-service",
 
     libraryDependencies ++= Seq(
-      "io.getquill" %% "quill-jdbc-zio" % quillVersion,
-      "org.postgresql" % "postgresql" % postgresVersion,
       "com.github.f4b6a3" % "uuid-creator" % "6.1.1"
     ),
 
