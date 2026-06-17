@@ -8,6 +8,8 @@
       <module name="backend.auth-service.main~1" target="21" />
       <module name="backend.auth-service.test" target="21" />
       <module name="backend.auth-service.test~1" target="21" />
+      <module name="backend.core-shared.main" target="21" />
+      <module name="backend.core-shared.test" target="21" />
       <module name="backend.db-shared.main" target="21" />
       <module name="backend.db-shared.test" target="21" />
       <module name="backend.shared.main" target="21" />

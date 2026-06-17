@@ -10,7 +10,7 @@ object AppUserDbTable extends DbTable[AppUserDb] {
 }
 
 case class AppUserDb(
-                      id: UUID,
+                      id: UUID, //make opaque
                       uniqueName: String,
                       email: String,
                       passwordHash: String,

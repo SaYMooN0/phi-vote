@@ -5,6 +5,7 @@ import backend.apishared.resp_errs.*
 import backend.authservice.*
 import backend.authservice.db.AuthServiceDb
 import backend.authservice.services.PasswordHashingService
+import backend.coreshared.*
 import zio.*
 import zio.http.*
 import zio.json.{JsonDecoder, JsonEncoder}
@@ -38,7 +39,7 @@ final class SignUpEndpoint private(
       val uniqueName = req.uniqueName.trim
       val emailRaw = req.email.trim
 
-      val emailResult = Email.parse(emailRaw)
+      val emailResult: Either[InvalidInputData, Email] = Right(Email("Email"))
 
       val errors =
         List(
