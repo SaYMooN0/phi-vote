@@ -7,14 +7,20 @@ ThisBuild / organization := "com.example"
 ThisBuild / version := "0.1.0"
 
 lazy val javaVersion = "21"
+
 lazy val zioVersion = "2.1.26"
 lazy val zioHttpVersion = "3.8.0"
 lazy val zioJsonVersion = "0.7.44"
+lazy val zioConfigVersion = "4.0.7"
+
 lazy val quillVersion = "4.8.6"
 lazy val postgresVersion = "42.7.4"
 
+lazy val argon2Version = "2.12"
+
 ThisBuild / dependencyOverrides ++= Seq(
   "dev.zio" %% "zio" % zioVersion,
+  
   "dev.zio" %% "zio-streams" % zioVersion,
   "dev.zio" %% "zio-json" % zioJsonVersion
 )
@@ -61,14 +67,9 @@ lazy val apiShared = (project in file("./lib/api-shared"))
       "dev.zio" %% "zio-json" % zioJsonVersion
     )
   )
-
 lazy val authService = (project in file("auth-service"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
-  .dependsOn(
-    coreShared,
-    apiShared,
-    dbShared
-  )
+  .dependsOn(coreShared, apiShared, dbShared)
   .settings(commonSettings)
   .settings(dockerSettings)
   .settings(dotenvSettings)
@@ -76,15 +77,20 @@ lazy val authService = (project in file("auth-service"))
     name := "auth-service",
 
     libraryDependencies ++= Seq(
-      "com.github.f4b6a3" % "uuid-creator" % "6.1.1"
+      "com.github.f4b6a3" % "uuid-creator" % "6.1.1",
+
+      "de.mkammerer" % "argon2-jvm" % argon2Version,
+
+      "dev.zio" %% "zio-config" % zioConfigVersion,
+      "dev.zio" %% "zio-config-magnolia" % zioConfigVersion,
+      "dev.zio" %% "zio-config-typesafe" % zioConfigVersion
     ),
 
-    Compile / mainClass := Some("backend.auth.AuthServiceMain"),
+    Compile / mainClass := Some("backend.authservice.AuthServiceMain"),
 
     Docker / packageName := "backend/auth-service",
     dockerExposedPorts := Seq(8180)
   )
-
 lazy val votingService = (project in file("voting-service"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(
@@ -97,7 +103,7 @@ lazy val votingService = (project in file("voting-service"))
   .settings(
     name := "voting-service",
 
-    Compile / mainClass := Some("backend.voting.VotingServiceMain"),
+    Compile / mainClass := Some("backend.votingservice.VotingServiceMain"),
 
     Docker / packageName := "backend/voting-service",
     dockerExposedPorts := Seq(8181)

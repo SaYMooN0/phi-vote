@@ -37,12 +37,20 @@ export class BackendService {
         try {
             const response = await fetchFunc(`/api/${this.#baseUrl}` + url, options);
             const text = await response.text();
-
+            if (text.length === 0 && response.status === 502) {
+                return {
+                    isOk: false,
+                    errKey: 'FetchErr',
+                    fetchErrCase: 'BackendNotRunning',
+                    msg: "Server request error: server is down. Please try again later"
+                }
+            }
             try {
                 const data = JSON.parse(text) as Result<E, A>;
                 return data;
 
-            } catch {
+            } catch (e: unknown) {
+                console.log(e);
 
                 return {
                     isOk: false,
@@ -53,6 +61,7 @@ export class BackendService {
             }
 
         } catch (e: unknown) {
+            console.log(e);
             if (e instanceof TypeError && e.message === "Failed to fetch") {
                 return { isOk: false, errKey: 'FetchErr', fetchErrCase: 'BackendCannotConnect', msg: "Server request error: Could not connect. Please check your connection or try again later" }
             }
@@ -81,6 +90,7 @@ export type FetchErr = {
     msg: string,
     errKey: 'FetchErr',
     fetchErrCase:
+    | 'BackendNotRunning'
     | 'BackendCannotConnect'
     | 'BackendFetchAborted'
     | 'BackendUnexpectedError'

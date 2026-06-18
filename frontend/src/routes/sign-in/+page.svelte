@@ -3,6 +3,8 @@
 	import { InvalidInputErrList, toJustMsgObj, type InvalidInputErr } from '$lib/ts/core';
 	import { watch } from 'runed';
 	import SignInEmailInput from './_c/SignInEmailInput.svelte';
+	import SignInUniqueNameInput from './_c/SignInUniqueNameInput.svelte';
+	import SignInPasswordInput from './_c/SignInPasswordInput.svelte';
 
 	let email = $state('');
 	let uniqueName = $state('');
@@ -40,9 +42,9 @@
 		}
 	}
 	async function makeRequest() {
-		const response = await ApiAuth.POST<InvalidInputErr, { healthMsg: string }>('/register', { email, uniqueName, password });
+		const response = await ApiAuth.POST<InvalidInputErr, { healthMsg: string }>('/sign-up', { email, uniqueName, password });
+		console.log(response);
 		if (response.isOk) {
-			///
 		} else if (response.errKey === 'InvalidInput') {
 			errMsgsObj = toJustMsgObj(response);
 		} else {
@@ -84,9 +86,11 @@
 					<p class="mt-5 max-w-sm text-base leading-7 text-auth-muted">Create your profile with a unique name and secure password.</p>
 				</header>
 
-				<form class="space-y-5" onsubmit={submit} novalidate >
+				<form class="space-y-5" onsubmit={submit} novalidate>
+					<SignInUniqueNameInput bind:value={uniqueName} errMsg={errMsgsObj.uniqueName} />
 					<SignInEmailInput bind:value={email} errMsg={errMsgsObj.email} />
-
+					<SignInPasswordInput bind:value={password} errMsg={errMsgsObj.password} />
+					<p>{errMsgsObj.other}</p>
 					<button
 						class="
 							mt-2 flex min-h-13 w-full items-center justify-center rounded-xl

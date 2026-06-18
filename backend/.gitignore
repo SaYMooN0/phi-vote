@@ -229,6 +229,4 @@ modules/app/dist-prod
 /**/.DS_Store
 .DS_Store
 
-/**/application.conf
-*/application.conf
 .env

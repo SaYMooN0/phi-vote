@@ -1,13 +1,7 @@
-package backend.authservice.db
-
-import backend.dbshared.DbTable
+package backend.authservice.domain.entities
 
 import java.time.Instant
 import java.util.UUID
-
-object UnconfirmedUserDbTable extends DbTable[UnconfirmedUser] {
-  override val name: String = "unconfirmed_user"
-}
 
 final case class UnconfirmedUser(
                                   id: UUID,
@@ -17,4 +11,3 @@ final case class UnconfirmedUser(
                                   createdAt: Instant,
                                   updatedAt: Instant
                                 )
-
