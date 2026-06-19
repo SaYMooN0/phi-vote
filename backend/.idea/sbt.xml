@@ -8,27 +8,39 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/auth-service" />
-            <option value="$PROJECT_DIR$/lib/api-shared" />
-            <option value="$PROJECT_DIR$/lib/core-shared" />
-            <option value="$PROJECT_DIR$/lib/db-shared" />
-            <option value="$PROJECT_DIR$/project" />
-            <option value="$PROJECT_DIR$/voting-service" />
+            <option value="E:\phivote\backend" />
+            <option value="E:\phivote\backend\auth-service\api" />
+            <option value="E:\phivote\backend\auth-service\db" />
+            <option value="E:\phivote\backend\auth-service\domain" />
+            <option value="E:\phivote\backend\lib\api-shared" />
+            <option value="E:\phivote\backend\lib\db-shared" />
+            <option value="E:\phivote\backend\lib\domain-shared" />
+            <option value="E:\phivote\backend\project" />
+            <option value="E:\phivote\backend\voting-service" />
           </set>
         </option>
         <option name="sbtVersion" value="1.12.11" />
       </SbtProjectSettings>
       <SbtProjectSettings>
         <option name="converterVersion" value="2" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/api" />
+        <option name="separateProdAndTestSourcesIsExplicit" value="true" />
+      </SbtProjectSettings>
+      <SbtProjectSettings>
+        <option name="converterVersion" value="2" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$/domain" />
+        <option name="separateProdAndTestSourcesIsExplicit" value="true" />
+      </SbtProjectSettings>
+      <SbtProjectSettings>
+        <option name="converterVersion" value="2" />
         <option name="externalProjectPath" value="$PROJECT_DIR$/lib" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/lib" />
-            <option value="$PROJECT_DIR$/lib/project" />
+            <option value="E:\phivote\backend\lib" />
+            <option value="E:\phivote\backend\lib\project" />
           </set>
         </option>
-        <option name="sbtVersion" value="1.10.7" />
+        <option name="sbtVersion" value="1.11.5" />
         <option name="separateProdAndTestSourcesIsExplicit" value="true" />
       </SbtProjectSettings>
       <SbtProjectSettings>
@@ -36,11 +48,11 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$/lib/core-shared" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/lib/core-shared" />
-            <option value="$PROJECT_DIR$/lib/core-shared/project" />
+            <option value="E:\phivote\backend\lib\core-shared" />
+            <option value="E:\phivote\backend\lib\core-shared\project" />
           </set>
         </option>
-        <option name="sbtVersion" value="1.10.7" />
+        <option name="sbtVersion" value="1.11.5" />
         <option name="separateProdAndTestSourcesIsExplicit" value="true" />
       </SbtProjectSettings>
       <SbtProjectSettings>
@@ -48,11 +60,11 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$/lib/db-shared" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$/lib/db-shared" />
-            <option value="$PROJECT_DIR$/lib/db-shared/project" />
+            <option value="E:\phivote\backend\lib\db-shared" />
+            <option value="E:\phivote\backend\lib\db-shared\project" />
           </set>
         </option>
-        <option name="sbtVersion" value="1.10.7" />
+        <option name="sbtVersion" value="1.11.5" />
         <option name="separateProdAndTestSourcesIsExplicit" value="true" />
       </SbtProjectSettings>
     </option>

@@ -2,7 +2,7 @@ import sbt.util.Logger
 
 import scala.io.Source
 
-ThisBuild / scalaVersion := "3.3.8"
+ThisBuild / scalaVersion := "3.8.3"
 ThisBuild / organization := "com.example"
 ThisBuild / version := "0.1.0"
 
@@ -20,17 +20,21 @@ lazy val argon2Version = "2.12"
 
 ThisBuild / dependencyOverrides ++= Seq(
   "dev.zio" %% "zio" % zioVersion,
-  
+
   "dev.zio" %% "zio-streams" % zioVersion,
   "dev.zio" %% "zio-json" % zioJsonVersion
 )
 
 lazy val root = (project in file("."))
   .aggregate(
-    coreShared,
+    domainShared,
     dbShared,
     apiShared,
-    authService,
+    //auth service
+    authServiceDomain,
+    authServiceDb,
+    authServiceApi,
+    //voting service
     votingService
   )
   .settings(
@@ -38,14 +42,18 @@ lazy val root = (project in file("."))
     publish / skip := true
   )
 
-lazy val coreShared = (project in file("./lib/core-shared"))
+lazy val domainShared = (project in file("./lib/domain-shared"))
   .settings(commonSettings)
   .settings(
-    name := "core-shared"
+    name := "domain-shared",
+    libraryDependencies ++= Seq(
+      "com.github.f4b6a3" % "uuid-creator" % "6.1.1",
+      "dev.zio" %% "zio" % zioVersion
+    )
   )
 
 lazy val dbShared = (project in file("./lib/db-shared"))
-  .dependsOn(coreShared)
+  .dependsOn(domainShared)
   .settings(commonSettings)
   .settings(
     name := "db-shared",
@@ -62,39 +70,47 @@ lazy val apiShared = (project in file("./lib/api-shared"))
     name := "api-shared",
 
     libraryDependencies ++= Seq(
-      "dev.zio" %% "zio" % zioVersion,
       "dev.zio" %% "zio-http" % zioHttpVersion,
-      "dev.zio" %% "zio-json" % zioJsonVersion
+      "dev.zio" %% "zio-json" % zioJsonVersion,
+      "dev.zio" %% "zio-config-magnolia" % zioConfigVersion,
+      "dev.zio" %% "zio-config-typesafe" % zioConfigVersion
     )
   )
-lazy val authService = (project in file("auth-service"))
+
+
+lazy val authServiceDomain = (project in file("./auth-service/domain"))
+  .settings(commonSettings)
+  .dependsOn(domainShared)
+  .settings(
+    name := "auth-service-domain"
+  )
+lazy val authServiceDb = (project in file("./auth-service/db"))
+  .settings(commonSettings)
+  .dependsOn(dbShared, authServiceDomain)
+  .settings(
+    name := "auth-service-db"
+  )
+lazy val authServiceApi = (project in file("./auth-service/api"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
-  .dependsOn(coreShared, apiShared, dbShared)
+  .dependsOn(apiShared, authServiceDb)
   .settings(commonSettings)
   .settings(dockerSettings)
   .settings(dotenvSettings)
   .settings(
-    name := "auth-service",
+    name := "auth-service-api",
 
     libraryDependencies ++= Seq(
-      "com.github.f4b6a3" % "uuid-creator" % "6.1.1",
-
-      "de.mkammerer" % "argon2-jvm" % argon2Version,
-
-      "dev.zio" %% "zio-config" % zioConfigVersion,
-      "dev.zio" %% "zio-config-magnolia" % zioConfigVersion,
-      "dev.zio" %% "zio-config-typesafe" % zioConfigVersion
+      "de.mkammerer" % "argon2-jvm" % argon2Version
     ),
 
-    Compile / mainClass := Some("backend.authservice.AuthServiceMain"),
-
+    Compile / mainClass := Some("AuthServiceMain"),
     Docker / packageName := "backend/auth-service",
     dockerExposedPorts := Seq(8180)
   )
 lazy val votingService = (project in file("voting-service"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(
-    coreShared,
+    domainShared,
     apiShared
   )
   .settings(commonSettings)
@@ -118,9 +134,7 @@ lazy val commonSettings = Seq(
   scalacOptions ++= Seq(
     "-deprecation",
     "-feature",
-    "-unchecked",
-    "-java-output-version",
-    javaVersion
+    "-unchecked"
   )
 )
 

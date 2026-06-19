@@ -1,6 +1,6 @@
 package backend.dbshared
 
-import backend.coreshared.AppUserId
+import backend.domainshared.AppUserId
 import io.getquill.MappedEncoding
 
 import java.util.UUID

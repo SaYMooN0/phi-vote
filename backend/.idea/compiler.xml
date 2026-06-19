@@ -4,22 +4,20 @@
     <bytecodeTargetLevel>
       <module name="backend.api-shared.main" target="21" />
       <module name="backend.api-shared.test" target="21" />
-      <module name="backend.auth-service.main" target="21" />
-      <module name="backend.auth-service.main~1" target="21" />
-      <module name="backend.auth-service.test" target="21" />
-      <module name="backend.auth-service.test~1" target="21" />
-      <module name="backend.core-shared.main" target="21" />
-      <module name="backend.core-shared.test" target="21" />
+      <module name="backend.auth-service-api.main" target="21" />
+      <module name="backend.auth-service-api.test" target="21" />
+      <module name="backend.auth-service-db.main" target="21" />
+      <module name="backend.auth-service-db.test" target="21" />
+      <module name="backend.auth-service-domain.main" target="21" />
+      <module name="backend.auth-service-domain.test" target="21" />
+      <module name="backend.core-shared.main~1" target="17" />
+      <module name="backend.core-shared.test~1" target="17" />
       <module name="backend.db-shared.main" target="21" />
       <module name="backend.db-shared.test" target="21" />
-      <module name="backend.shared.main" target="21" />
-      <module name="backend.shared.main~1" target="21" />
-      <module name="backend.shared.test" target="21" />
-      <module name="backend.shared.test~1" target="21" />
+      <module name="backend.domain-shared.main" target="21" />
+      <module name="backend.domain-shared.test" target="21" />
       <module name="backend.voting-service.main" target="21" />
-      <module name="backend.voting-service.main~1" target="21" />
       <module name="backend.voting-service.test" target="21" />
-      <module name="backend.voting-service.test~1" target="21" />
     </bytecodeTargetLevel>
   </component>
 </project>
