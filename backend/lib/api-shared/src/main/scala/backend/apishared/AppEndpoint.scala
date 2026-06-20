@@ -5,11 +5,11 @@ import zio.*
 import zio.http.*
 
 trait AppEndpoint {
-  def handle(req: Request): IO[ResponseErr, Response]
+  def handle(httpReq: Request): IO[ResponseErr, Response]
 }
 
 trait EndpointProviderFor[E <: AppEndpoint](using Tag[E]) {
 
   final def handler: Handler[E, ResponseErr, Request, Response] =
-    zio.http.handler { (req: Request) => ZIO.serviceWithZIO[E](_.handle(req)) }
+    zio.http.handler { (r: Request) => ZIO.serviceWithZIO[E](_.handle(r)) }
 }

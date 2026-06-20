@@ -1,7 +1,7 @@
 package backend.authservice.api.services
 
 import backend.authservice.api.Configs
-import backend.authservice.domain.services.{PasswordHashingConfig, PasswordHashingService, UserPassword}
+import backend.authservice.domain.services.{PasswordHashingConfig, PasswordHashingService, AppUserPassword}
 import backend.authservice.domain.shared.PasswordHash
 import de.mkammerer.argon2.Argon2Factory.Argon2Types
 import de.mkammerer.argon2.{Argon2, Argon2Factory}
@@ -84,10 +84,10 @@ object PasswordHashingServiceDemo extends ZIOAppDefault {
   private val program =
     for {
       service <- ZIO.service[PasswordHashingService]
-      password = UserPassword.unsafeFrom("123")
+      password = AppUserPassword.unsafeFrom("123")
       hash <- service.hash(password)
       _ <- Console.printLine(hash.value)
-      verified <- service.verify(UserPassword.unsafeFrom("123"), hash)
+      verified <- service.verify(AppUserPassword.unsafeFrom("123"), hash)
       _ <- Console.printLine(s"verified = $verified")
     } yield ()
 

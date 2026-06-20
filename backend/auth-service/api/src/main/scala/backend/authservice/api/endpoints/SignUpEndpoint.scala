@@ -4,7 +4,7 @@ import backend.apishared.*
 import backend.apishared.resp_errs.*
 import backend.authservice.db.AppUserDbTable
 import backend.authservice.domain.entities.AppUser
-import backend.authservice.domain.services.{PasswordHashingService, UserPassword}
+import backend.authservice.domain.services.{PasswordHashingService, AppUserPassword}
 import backend.authservice.domain.shared.Email
 import backend.dbshared.DbQuill
 import backend.domainshared.AppUserId
@@ -25,16 +25,16 @@ final class SignUpEndpoint private(
 
   private final case class RawRequest(uniqueName: String, email: String, password: String) derives JsonDecoder
 
-  private final case class ParsedRequest(uniqueName: String, email: Email, password: String)
+  private final case class ParsedRequest(uniqueName: UserUniqueName, email: Email, password: AppUserPassword)
 
   private final case class ResponseResult(email: String) derives JsonEncoder
 
-  override def handle(req: Request): IO[ResponseErr, Response] =
+  override def handle(httpReq: Request): IO[ResponseErr, Response] =
     for {
-      signUpReq <- RequestParser.parse(req.body)
-      _ <- register(signUpReq)
+      req <- RequestParser.parse(httpReq.body)
+      _ <- register(req)
     } yield OkResponse(ResponseResult(
-      signUpReq.email.value
+      req.email.value
     ))
 
 
@@ -43,21 +43,14 @@ final class SignUpEndpoint private(
       now <- Clock.instant
 
       passwordHash <- passwordHashingService.hash(
-        UserPassword.unsafeFrom(req.password)
+        AppUserPassword.unsafeFrom(req.password)
       )
 
       newUserId = AppUserId(UuidCreator.getTimeOrderedEpoch())
 
-      appUser = AppUser(
-        id = newUserId,
-        uniqueName = req.uniqueName,
-        email = req.email,
-        passwordHash = passwordHash,
-        createdAt = now,
-        registrationDate = now
-      )
+      appUser = AppUser(newUserId, req.uniqueName, req.email, passwordHash, now)
 
-       _ <- run {
+      _ <- run {
         AppUserDbTable()
           .insertValue(lift(appUser))
       }.unit
@@ -70,38 +63,59 @@ final class SignUpEndpoint private(
       }
       .mapError(_ => ??? : ResponseErr)
 
+
   private object RequestParser extends RequestParserFor[ParsedRequest, RawRequest] {
-
-    override protected def fromRawToParsed(req: RawRequest) = {
-      val uniqueName = req.uniqueName.trim
-      val emailRaw = req.email.trim
-
-      val emailResult: Either[InvalidInputData, Email] = Right(Email.unsafeFrom("email@em.com"))
-
-      val errors =
-        List(
-          Option.when(uniqueName.length < 3) {
-            InvalidInputData(
-              "uniqueName",
-              "Unique name is too short",
-              Some("Use at least 3 characters")
-            )
-          },
-          emailResult.left.toOption,
-          Option.when(req.password.length < 8) {
-            InvalidInputData(
-              "password",
-              "Password is too short",
-              Some("Use at least 8 characters")
-            )
-          }
-        ).flatten
-
-      (errors, emailResult) match {
-        case (Nil, Right(email)) => ZIO.succeed(ParsedRequest(uniqueName, email, req.password))
-        case (first :: rest, _) => ZIO.fail(new InvalidInputRespErr(first, rest *))
-        case (Nil, Left(emailErr)) => ZIO.fail(new InvalidInputRespErr(emailErr))
+    override protected def fromRawToParsed(req: RawRequest): IO[InvalidInputRespErr, ParsedRequest] = {
+      import RequestParserFor.*
+      ZIO.fromEither {
+        map3(
+          field("uniqueName", UserUniqueName.createFrom(req.uniqueName))(uniqueNameErrToContent),
+          field("email", Email.createFrom(req.email))(emailErrToContent),
+          succeed("password", AppUserPassword.createFrom(req.password)(passwordErrToContent))
+        )(ParsedRequest.apply)
       }
+    }
+
+    private def uniqueNameErrToContent(err: UserUniqueNameCreationErr): RequestParserFor.ErrContent = err match {
+      case UserUniqueNameCreationErr.TooShort(actual, min) => (
+        s"Unique name is too short. Actual length: $actual. Minimum length: $min",
+        Some(s"Add at least ${min - actual} characters")
+      )
+
+      case UserUniqueNameCreationErr.TooLong(actual, max) => (
+        s"Unique name is too long. Actual length: $actual. Maximum length: $max",
+        Some(s"Shorten your unique name by at least ${actual - max}")
+      )
+
+      case UserUniqueNameCreationErr.InvalidChars(chars) => (
+        s"Unique name contains invalid characters: ${chars.mkString(", ")}.",
+        Some("Remove all invalid characters")
+      )
+    }
+
+    private def emailErrToContent(err: EmailCreationErr): RequestParserFor.ErrContent = err match {
+      case EmailCreationErr.TooLong(actual, max) => (
+        s"Email is too long. Actual length: $actual. Maximum allowed length: $max",
+        Some(s"Use email address that is no longer than $max characters")
+      )
+      case EmailCreationErr.InvalidFormat => ("Email has invalid format", None)
+    }
+
+    private def passwordErrToContent(err: UserPasswordCreationErr): RequestParserFor.ErrContent = err match {
+      case UserPasswordCreationErr.TooShort(actual, min) => (
+        s"Password is too short. Actual length: $actual. Minimum length: $min",
+        Some(s"Add at least ${min - actual} characters")
+      )
+
+      case UserPasswordCreationErr.TooLong(actual, max) => (
+        s"Password is too long. Actual length: $actual. Maximum allowed length: $max",
+        Some(s"Shorten your password by at least ${actual - max} characters")
+      )
+
+      case UserPasswordCreationErr.ContainsSpaces(spacesCount) => (
+        s"Password contains spaces. Spaces count: $spacesCount",
+        Some("Remove all spaces from your password")
+      )
     }
   }
 }

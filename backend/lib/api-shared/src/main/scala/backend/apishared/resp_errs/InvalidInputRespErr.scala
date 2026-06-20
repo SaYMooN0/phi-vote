@@ -3,30 +3,42 @@ package backend.apishared.resp_errs
 import zio.http.*
 import zio.json.ast.Json
 
-final case class InvalidInputData(inputKey: String, msg: String, fixRec: Option[String] = None)
-
-final class InvalidInputRespErr(
-                                 first: InvalidInputData,
-                                 rest: InvalidInputData*
-                               ) extends ResponseErr {
+final class InvalidInputRespErr private(
+                                         private val inputs: Map[String, (String, Option[String])] //input key -> (msg, fix rec)
+                                       ) extends ResponseErr {
 
   override protected val errKey: String = "InvalidInput"
 
   override protected val status: Status = Status.BadRequest
 
   override def payload: Json.Obj = {
-    def inputDataToJsonLine(item: InvalidInputData) =
-      item.inputKey -> Json
-        .Obj("errMsg" -> Json.Str(item.msg))
-        .merge {
-          item.fixRec match {
-            case Some(value) => Json.Obj("fixRec" -> Json.Str(value))
-            case None => Json.Obj()
-          }
-        }
+    val inputsJson = Json.Obj(
+      inputs.toList.map {
+        case (inputKey, (msg, fixRec)) =>
+          inputKey -> Json
+            .Obj("errMsg" -> Json.Str(msg))
+            .merge {
+              fixRec match {
+                case Some(value) => Json.Obj("fixRec" -> Json.Str(value))
+                case None => Json.Obj()
+              }
+            }
+      } *
+    )
 
-    val all = first +: rest.toList
-    val inputs = Json.Obj(all.map(inputDataToJsonLine) *)
-    Json.Obj("inputs" -> inputs)
+    Json.Obj("inputs" -> inputsJson)
   }
+}
+
+object InvalidInputRespErr {
+  def fromMap(
+               inputs: Map[String, (String, Option[String])]
+             ): InvalidInputRespErr =
+    new InvalidInputRespErr(inputs)
+
+  def one(inputKey: String, msg: String, fixRec: Option[String] = None): InvalidInputRespErr =
+    new InvalidInputRespErr(Map(inputKey -> (msg, fixRec)))
+
+  def field(inputKey: String, msg: String, fixRec: Option[String] = None): (String, (String, Option[String])) =
+    inputKey -> (msg, fixRec)
 }

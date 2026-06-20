@@ -8,7 +8,7 @@ object AuthServiceDbMappings {
     MappedEncoding[Email, String](Email.unwrap)
 
   given MappedEncoding[String, Email] =
-    MappedEncoding[String, Email](Email.unsafeFrom)
+    MappedEncoding[String, Email](Email.createFrom(_).orElse(throw Error("Invalid email")))
 
   given MappedEncoding[PasswordHash, String] =
     MappedEncoding[PasswordHash, String](PasswordHash.value)
