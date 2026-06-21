@@ -8,11 +8,11 @@ object Email {
   private val MaxLength = 100
   private val EmailPattern = "^[A-Za-z0-9_%+-]+(?:\\.[A-Za-z0-9_%+-]+)*@(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z]{2,63}$".r
 
-  def createFrom(value: String): Either[UserEmailCreationErr, Type] = {
+  def createFrom(value: String): Either[EmailCreationErr, Type] = {
     if value.length > MaxLength then
-      Left(UserEmailCreationErr.TooLong(value.length, MaxLength))
+      Left(EmailCreationErr.TooLong(value.length, MaxLength))
     else if !EmailPattern.matches(value) then
-      Left(UserEmailCreationErr.InvalidFormat)
+      Left(EmailCreationErr.InvalidFormat)
     else
       Right(value)
   }
@@ -24,7 +24,7 @@ object Email {
     def value: String = unwrap(email)
 }
 
-enum UserEmailCreationErr {
+enum EmailCreationErr {
   case TooLong(actual: Int, max: Int)
   case InvalidFormat
 }

@@ -4,9 +4,9 @@ import backend.authservice.domain.shared.PasswordHash
 import zio.*
 
 trait PasswordHashingService {
-  def hash(password: AppUserPassword): Task[PasswordHash]
+  def hash(password: UserPassword): Task[PasswordHash]
 
-  def verify(passwordToVerify: AppUserPassword, hash: PasswordHash): Task[Boolean]
+  def verify(passwordToVerify: UserPassword, hash: PasswordHash): Task[Boolean]
 }
 
 final case class PasswordHashingConfig(
@@ -18,9 +18,9 @@ final case class PasswordHashingConfig(
                                       )
 
 
-type AppUserPassword = AppUserPassword.Type
+type UserPassword = UserPassword.Type
 
-object AppUserPassword {
+object UserPassword {
   opaque type Type = String
 
   private val MinLength = 8

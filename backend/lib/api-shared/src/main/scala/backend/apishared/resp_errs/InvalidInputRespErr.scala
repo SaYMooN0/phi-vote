@@ -41,4 +41,7 @@ object InvalidInputRespErr {
 
   def field(inputKey: String, msg: String, fixRec: Option[String] = None): (String, (String, Option[String])) =
     inputKey -> (msg, fixRec)
+
+  def merge(first: InvalidInputRespErr, second: InvalidInputRespErr): InvalidInputRespErr =
+    new InvalidInputRespErr(first.inputs ++ second.inputs)
 }

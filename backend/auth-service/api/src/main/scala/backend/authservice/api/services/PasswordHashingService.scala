@@ -1,7 +1,7 @@
 package backend.authservice.api.services
 
 import backend.authservice.api.Configs
-import backend.authservice.domain.services.{PasswordHashingConfig, PasswordHashingService, AppUserPassword}
+import backend.authservice.domain.services.{PasswordHashingConfig, PasswordHashingService, UserPassword}
 import backend.authservice.domain.shared.PasswordHash
 import de.mkammerer.argon2.Argon2Factory.Argon2Types
 import de.mkammerer.argon2.{Argon2, Argon2Factory}
@@ -15,8 +15,7 @@ final class PasswordHashingServiceLive private(
 
   override def hash(password: UserPassword): Task[PasswordHash] =
     ZIO.attemptBlocking {
-      val passwordChars =
-        password.value.toCharArray
+      val passwordChars = password.value.toCharArray
 
       try {
         PasswordHash.unsafeFrom(
@@ -34,8 +33,7 @@ final class PasswordHashingServiceLive private(
 
   override def verify(passwordToVerify: UserPassword, hash: PasswordHash): Task[Boolean] = {
     ZIO.attemptBlocking {
-      val passwordChars =
-        passwordToVerify.value.toCharArray
+      val passwordChars = passwordToVerify.value.toCharArray
 
       try {
         argon2.verify(
@@ -84,10 +82,10 @@ object PasswordHashingServiceDemo extends ZIOAppDefault {
   private val program =
     for {
       service <- ZIO.service[PasswordHashingService]
-      password = AppUserPassword.unsafeFrom("123")
+      password = UserPassword.createFrom("123").toOption.get
       hash <- service.hash(password)
       _ <- Console.printLine(hash.value)
-      verified <- service.verify(AppUserPassword.unsafeFrom("123"), hash)
+      verified <- service.verify(password, hash)
       _ <- Console.printLine(s"verified = $verified")
     } yield ()
 

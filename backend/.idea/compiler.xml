@@ -17,7 +17,9 @@
       <module name="backend.domain-shared.main" target="21" />
       <module name="backend.domain-shared.test" target="21" />
       <module name="backend.voting-service.main" target="21" />
+      <module name="backend.voting-service.main~1" target="21" />
       <module name="backend.voting-service.test" target="21" />
+      <module name="backend.voting-service.test~1" target="21" />
     </bytecodeTargetLevel>
   </component>
 </project>

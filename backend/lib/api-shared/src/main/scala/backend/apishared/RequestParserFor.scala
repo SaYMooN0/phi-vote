@@ -23,65 +23,54 @@ trait RequestParserFor[Parsed, Raw: JsonDecoder] {
 }
 
 object RequestParserFor {
-  protected type ErrContent = (String, Option[String])
-  protected type InputErrOr[A] = Either[InvalidInputRespErr, A]
+  private type ErrContent = (String, Option[String])
+  private type InputErrOr[A] = Either[InvalidInputRespErr, A]
+  private type InputField[E, A] = (String, (Either[E, A], E => ErrContent))
 
-  def succeed[A](value: A): InputErrOr[A] =
-    Right(value)
-
-  def field[E, A](
-                   inputKey: String,
-                   result: Either[E, A]
-                 )(
-    leftToErrContent: E => ErrContent
-                 ): InputErrOr[A] =
+  private def parseField[E, A](field: InputField[E, A]): InputErrOr[A] = {
+    val (inputKey, (result, leftToErrContent)) = field
     result.left.map { err =>
       val (msg, fixRec) = leftToErrContent(err)
       InvalidInputRespErr.one(inputKey, msg, fixRec)
     }
+  }
 
-  extension (firstErr: InvalidInputRespErr)
+  extension (firstErr: InvalidInputRespErr) {
     private def merge(secondErr: InvalidInputRespErr): InvalidInputRespErr =
-      InvalidInputRespErr.fromMap(firstErr.inputs ++ secondErr.inputs)
-
-  extension [A](first: InputErrOr[A])
-    def zipWithAccum[B, C](
-                            second: InputErrOr[B]
-                          )(
-                            f: (A, B) => C
-                          ): InputErrOr[C] =
+      InvalidInputRespErr.merge(firstErr, secondErr)
+  }
+  extension [A](first: InputErrOr[A]) {
+    private def zipWithAccum[B, R](
+                                    second: InputErrOr[B]
+                                  )(
+                                    successConstructor: (A, B) => R
+                                  ): InputErrOr[R] =
       (first, second) match {
-        case (Right(a), Right(b)) =>
-          Right(f(a, b))
-
-        case (Left(firstErr), Left(secondErr)) =>
-          Left(firstErr.merge(secondErr))
-
-        case (Left(err), Right(_)) =>
-          Left(err)
-
-        case (Right(_), Left(err)) =>
-          Left(err)
+        case (Right(a), Right(b)) => Right(successConstructor(a, b))
+        case (Left(firstErr), Left(secondErr)) => Left(firstErr.merge(secondErr))
+        case (Left(err), Right(_)) => Left(err)
+        case (Right(_), Left(err)) => Left(err)
       }
+  }
 
-  def map2[A, B, C](
-                     first: InputErrOr[A],
-                     second: InputErrOr[B]
-                   )(
-                     f: (A, B) => C
-                   ): InputErrOr[C] =
-    first.zipWithAccum(second)(f)
+  def mapMultiple[E1, A, E2, B, R](
+                                    first: InputField[E1, A],
+                                    second: InputField[E2, B]
+                                  )(
+                                    successConstructor: (A, B) => R
+                                  ): InputErrOr[R] =
+    parseField(first).zipWithAccum(parseField(second))(successConstructor)
 
-  def map3[A, B, C, D](
-                        first: InputErrOr[A],
-                        second: InputErrOr[B],
-                        third: InputErrOr[C]
-                      )(
-                        f: (A, B, C) => D
-                      ): InputErrOr[D] =
-    first
-      .zipWithAccum(second)((_, _))
-      .zipWithAccum(third) { case ((a, b), c) =>
-        f(a, b, c)
-      }
+  def mapMultiple[E1, A, E2, B, E3, C, R](
+                                           first: InputField[E1, A],
+                                           second: InputField[E2, B],
+                                           third: InputField[E3, C]
+                                         )(
+                                           successConstructor: (A, B, C) => R
+                                         ): InputErrOr[R] =
+    parseField(first)
+      .zipWithAccum(parseField(second))((_, _))
+      .zipWithAccum(parseField(third)) { case ((a, b), c) => successConstructor(a, b, c) }
+
+  def finish[A](result: InputErrOr[A]): IO[InvalidInputRespErr, A] = ZIO.fromEither(result)
 }

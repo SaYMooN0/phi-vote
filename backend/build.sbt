@@ -17,6 +17,7 @@ lazy val quillVersion = "4.8.6"
 lazy val postgresVersion = "42.7.4"
 
 lazy val argon2Version = "2.12"
+lazy val javaMailVersion = "1.6.2"
 
 ThisBuild / dependencyOverrides ++= Seq(
   "dev.zio" %% "zio" % zioVersion,
@@ -100,7 +101,9 @@ lazy val authServiceApi = (project in file("./auth-service/api"))
     name := "auth-service-api",
 
     libraryDependencies ++= Seq(
-      "de.mkammerer" % "argon2-jvm" % argon2Version
+      "de.mkammerer" % "argon2-jvm" % argon2Version,
+      "com.sun.mail" % "javax.mail" % javaMailVersion,
+
     ),
 
     Compile / mainClass := Some("AuthServiceMain"),
