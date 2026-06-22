@@ -2,7 +2,7 @@ package backend.authservice.api
 
 
 import backend.authservice.api.endpoints.SignUpEndpoint
-import backend.authservice.api.services.PasswordHashingServiceLive
+import backend.authservice.api.services.{EmailServiceLive, PasswordHashingServiceLive}
 import io.getquill.jdbczio.Quill
 import zio.*
 import zio.config.typesafe.TypesafeConfigProvider
@@ -25,6 +25,7 @@ object AuthServiceMain extends ZIOAppDefault {
 
         SignUpEndpoint.live,
         PasswordHashingServiceLive.configuredLayer,
+        EmailServiceLive.configuredLayer,
 
         Quill.Postgres.fromNamingStrategy(io.getquill.SnakeCase),
         Quill.DataSource.fromPrefix("authServiceDb")

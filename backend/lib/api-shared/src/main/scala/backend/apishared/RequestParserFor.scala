@@ -12,11 +12,11 @@ trait RequestParserFor[Parsed, Raw: JsonDecoder] {
   final def parse(reqBody: Body): IO[ResponseErr, Parsed] = for {
     body <- reqBody
       .asString
-      .mapError(_ => MalformedJsonRespErr("Could not read request body"))
+      .mapError(_ => MalformedJsonRespErr())
 
     raw <- ZIO
       .fromEither(body.fromJson[Raw])
-      .mapError(MalformedJsonRespErr(_))
+      .mapError(_ => MalformedJsonRespErr())
 
     parsed <- fromRawToParsed(raw)
   } yield parsed
@@ -40,11 +40,7 @@ object RequestParserFor {
       InvalidInputRespErr.merge(firstErr, secondErr)
   }
   extension [A](first: InputErrOr[A]) {
-    private def zipWithAccum[B, R](
-                                    second: InputErrOr[B]
-                                  )(
-                                    successConstructor: (A, B) => R
-                                  ): InputErrOr[R] =
+    private def zipWithAccum[B, R](second: InputErrOr[B])(successConstructor: (A, B) => R): InputErrOr[R] =
       (first, second) match {
         case (Right(a), Right(b)) => Right(successConstructor(a, b))
         case (Left(firstErr), Left(secondErr)) => Left(firstErr.merge(secondErr))

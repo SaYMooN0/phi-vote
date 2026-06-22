@@ -13,10 +13,12 @@ trait EmailService {
                                         expirationDate: Instant
                                       ): Task[Unit]
 
-  def sendPasswordResetLink(
+  def sendPasswordResetConfirmationLink(
                              to: Email,
                              userUniqueName: UserUniqueName,
                              confirmationLink: String,
+                             passwordFirstChar: Char,
+                             passwordLastChar: Char,
                              expirationDate: Instant
                            ): Task[Unit];
 

@@ -7,11 +7,12 @@ import de.mkammerer.argon2.Argon2Factory.Argon2Types
 import de.mkammerer.argon2.{Argon2, Argon2Factory}
 import zio.*
 import zio.config.magnolia.deriveConfig
+import zio.config.typesafe.TypesafeConfigProvider
 
-final class PasswordHashingServiceLive private(
-                                                config: PasswordHashingConfig,
-                                                argon2: Argon2
-                                              ) extends PasswordHashingService {
+private final class PasswordHashingServiceLive private(
+                                                        config: PasswordHashingConfig,
+                                                        argon2: Argon2
+                                                      ) extends PasswordHashingService {
 
   override def hash(password: UserPassword): Task[PasswordHash] =
     ZIO.attemptBlocking {
@@ -78,16 +79,17 @@ object PasswordHashingServiceLive {
 }
 
 object PasswordHashingServiceDemo extends ZIOAppDefault {
+  override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] =
+    Runtime.setConfigProvider(TypesafeConfigProvider.fromResourcePath())
 
-  private val program =
-    for {
-      service <- ZIO.service[PasswordHashingService]
-      password = UserPassword.createFrom("123").toOption.get
-      hash <- service.hash(password)
-      _ <- Console.printLine(hash.value)
-      verified <- service.verify(password, hash)
-      _ <- Console.printLine(s"verified = $verified")
-    } yield ()
+  private val program = for {
+    service <- ZIO.service[PasswordHashingService]
+    password = UserPassword.createFrom("123").toOption.get
+    hash <- service.hash(password)
+    _ <- Console.printLine(hash.value)
+    verified <- service.verify(password, hash)
+    _ <- Console.printLine(s"verified = $verified")
+  } yield ()
 
   override def run: ZIO[Any & (ZIOAppArgs & Scope), Any, Any] =
     program.provide(

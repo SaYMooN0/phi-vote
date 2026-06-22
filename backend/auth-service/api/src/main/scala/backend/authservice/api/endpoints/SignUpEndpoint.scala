@@ -3,11 +3,11 @@ package backend.authservice.api.endpoints
 import backend.apishared.*
 import backend.apishared.resp_errs.*
 import backend.authservice.db.AppUserDbTable
-import backend.authservice.domain.entities.AppUser
-import backend.authservice.domain.services.{PasswordHashingService, UserPassword, UserPasswordCreationErr}
+import backend.authservice.domain.entities.{AppUser, UnconfirmedUser}
+import backend.authservice.domain.services.{EmailService, PasswordHashingService, UserPassword, UserPasswordCreationErr}
 import backend.authservice.domain.shared.{Email, EmailCreationErr, UserUniqueName, UserUniqueNameCreationErr}
 import backend.dbshared.DbQuill
-import backend.domainshared.AppUserId
+import backend.domainshared.{AppUserId, UnconfirmedUserId}
 import com.github.f4b6a3.uuid.UuidCreator
 import io.getquill.*
 import zio.*
@@ -16,10 +16,12 @@ import zio.json.{JsonDecoder, JsonEncoder}
 
 final class SignUpEndpoint private(
                                     db: DbQuill,
-                                    passwordHashingService: PasswordHashingService
+                                    passwordHashingService: PasswordHashingService,
+                                    emailService: EmailService
                                   ) extends AppEndpoint {
 
   import backend.authservice.db.AppUserTableMappings.given
+  import backend.authservice.db.UnconfirmedUserTableMappings.given
   import db.*
 
   private final case class RawRequest(uniqueName: String, email: String, password: String)derives JsonDecoder
@@ -31,32 +33,98 @@ final class SignUpEndpoint private(
   override def handle(httpReq: Request): IO[ResponseErr, Response] =
     for {
       req <- RequestParser.parse(httpReq.body)
-      _ <- register(req)
-    } yield OkResponse(ResponseResult(
-      req.email.value
-    ))
 
+      unconfirmedUser <- register(req)
 
-  private def register(req: ParsedRequest): IO[ResponseErr, AppUserId] =
-    (for {
-      now <- Clock.instant
+      confirmationLinkExpirationDate <- Clock.instant.map(_.plusSeconds(15 * 60))
 
-      passwordHash <- passwordHashingService.hash(req.password)
-      newUserId = AppUserId(UuidCreator.getTimeOrderedEpoch())
-      appUser = AppUser(newUserId, req.uniqueName, req.email, passwordHash, now)
+      _ <- emailService
+        .sendRegistrationConfirmationLink(
+          to = req.email,
+          userUniqueName = req.uniqueName,
+          confirmationLink = registrationConfirmationLinkFor(unconfirmedUser),
+          expirationDate = confirmationLinkExpirationDate
+        )
+        .mapError(_ =>
+          InternalServerRespErr("Could not send registration confirmation email")
+        )
+    } yield OkResponse(
+      ResponseResult(req.email.value)
+    )
 
-      _ <- run {
-        AppUserDbTable().insertValue(lift(appUser))
-      }.unit
-    } yield newUserId)
-      .tapError { err =>
-        zio.Console.printLineError(
-          s"[register] failed to insert app_user: ${err.getMessage}"
-        ) *>
-          ZIO.succeed(err.printStackTrace())
-      }
-      .mapError(_ => ??? : ResponseErr)
+  private def register(req: ParsedRequest): IO[ResponseErr, UnconfirmedUser] =
+    transaction {
+      for {
+        confirmedUserExists <- run {
+          AppUserDbTable()
+            .filter(_.email == lift(req.email))
+            .take(1)
+        }
+          .map(_.nonEmpty)
+          .mapError(_ => InternalServerRespErr("Database operation failed"))
 
+        _ <-
+          if confirmedUserExists then
+            ZIO.fail(
+              ConflictRespErr(
+                msg = "This email is already taken",
+                details = s"Profile with email '${req.email.value}' already exists"
+              )
+            )
+          else
+            ZIO.unit
+
+        existingUnconfirmedUser <- run {
+          UnconfirmedUserDbTable()
+            .filter(_.email == lift(req.email))
+            .take(1)
+        }
+          .map(_.headOption)
+          .mapError(_ => InternalServerRespErr("Database operation failed"))
+
+        passwordHash <- passwordHashingService
+          .hash(req.password)
+          .mapError(_ => InternalServerRespErr("Could not hash password"))
+
+        unconfirmedUser <- existingUnconfirmedUser match {
+          case Some(existingUser) =>
+            val updatedUser = existingUser.copy(
+              uniqueName = req.uniqueName,
+              passwordHash = passwordHash
+              // если у тебя есть confirmationToken / updatedAt / expirationDate,
+              // обновляй их здесь тоже
+            )
+
+            run {
+              UnconfirmedUserDbTable()
+                .filter(_.id == lift(existingUser.id))
+                .updateValue(lift(updatedUser))
+            }
+              .as(updatedUser)
+              .mapError(_ => InternalServerRespErr("Database operation failed"))
+
+          case None =>
+            val newUser = UnconfirmedUser(
+              id = UnconfirmedUserId(UuidCreator.getTimeOrderedEpoch()),
+              uniqueName = req.uniqueName,
+              email = req.email,
+              passwordHash = passwordHash
+            )
+
+            run {
+              UnconfirmedUserDbTable()
+                .insertValue(lift(newUser))
+            }
+              .as(newUser)
+              .mapError(_ => InternalServerRespErr("Database operation failed"))
+        }
+      } yield unconfirmedUser
+    }
+  private def registrationConfirmationLinkFor(unconfirmedUser: UnconfirmedUser): String =
+    s"${frontendConfig.baseUrl}" +
+      s"/${frontendConfig.confirmRegistrationPath}" +
+      s"?id=${unconfirmedUser.id.value}" +
+      s"&t=${unconfirmedUser.confirmationToken.value}"
 
   private object RequestParser extends RequestParserFor[ParsedRequest, RawRequest] {
     override protected def fromRawToParsed(req: RawRequest): IO[InvalidInputRespErr, ParsedRequest] = {
@@ -116,15 +184,16 @@ final class SignUpEndpoint private(
 object SignUpEndpoint extends EndpointProviderFor[SignUpEndpoint] {
 
   val live: ZLayer[
-    DbQuill & PasswordHashingService,
+    DbQuill & PasswordHashingService & EmailService,
     Nothing,
     SignUpEndpoint
   ] =
     ZLayer.fromFunction {
       (
         quill: DbQuill,
-        passwordHashingService: PasswordHashingService
+        passwordHashingService: PasswordHashingService,
+        emailService: EmailService
       ) =>
-        new SignUpEndpoint(quill, passwordHashingService)
+        new SignUpEndpoint(quill, passwordHashingService, emailService)
     }
 }

@@ -13,11 +13,15 @@ object AppUserDbTable {
   inline def apply(): Quoted[EntityQuery[AppUser]] =
     quote(querySchema[AppUser]("app_user"))
 }
-
-object UnconfirmedUserDbTable extends DbTable[UnconfirmedUser] {
-  override inline val name: "unconfirmed_user" = "unconfirmed_user"
+object UnconfirmedUserDbTable {
+  inline def apply(): Quoted[EntityQuery[UnconfirmedUser]] =
+    quote(querySchema[UnconfirmedUser]("unconfirmed_user"))
 }
 
-
+//object UnconfirmedUserDbTable extends DbTable[UnconfirmedUser] {
+//  override inline val name: "unconfirmed_user" = "unconfirmed_user"
+//}
+//
+//
 
 

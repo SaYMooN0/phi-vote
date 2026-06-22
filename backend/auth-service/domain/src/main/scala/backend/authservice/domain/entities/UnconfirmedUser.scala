@@ -1,13 +1,17 @@
 package backend.authservice.domain.entities
 
-import java.time.Instant
-import java.util.UUID
+import backend.authservice.domain.shared.{Email, PasswordHash, UserUniqueName}
+import backend.domainshared.{UnconfirmedUserId, UuidWrapperCompanion}
 
 final case class UnconfirmedUser(
-                                  id: UUID,
-                                  uniqueName: String,
-                                  email: String,
-                                  passwordHash: String,
-                                  createdAt: Instant,
-                                  updatedAt: Instant
+                                  id: UnconfirmedUserId,
+                                  uniqueName: UserUniqueName,
+                                  email: Email,
+                                  passwordHash: PasswordHash,
+                                  confirmationToken: UnconfirmedUserConfirmationToken
                                 )
+
+
+type UnconfirmedUserConfirmationToken = UnconfirmedUserConfirmationToken.Type
+
+object UnconfirmedUserConfirmationToken extends UuidWrapperCompanion

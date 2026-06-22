@@ -6,7 +6,7 @@ import backend.domainshared.AppUserId
 import java.time.Instant
 
 
-case class AppUser(
+final case class AppUser(
                     id: AppUserId,
                     uniqueName: UserUniqueName,
                     email: Email,

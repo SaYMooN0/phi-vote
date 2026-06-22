@@ -1,7 +1,5 @@
-package backend.apishared.resp_errs
+package backend.apishared
 
-import zio.http.{Response, Status}
-import zio.json.ast.Json
 import zio.*
 import zio.http.*
 import zio.json.*

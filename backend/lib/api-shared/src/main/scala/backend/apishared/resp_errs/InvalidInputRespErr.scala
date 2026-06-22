@@ -1,5 +1,6 @@
 package backend.apishared.resp_errs
 
+import backend.apishared.ResponseErr
 import zio.http.*
 import zio.json.ast.Json
 
