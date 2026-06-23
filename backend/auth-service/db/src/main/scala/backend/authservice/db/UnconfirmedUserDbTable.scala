@@ -1,13 +1,22 @@
 package backend.authservice.db
 
 
-import backend.authservice.domain.entities.UnconfirmedUserConfirmationToken
+import backend.authservice.domain.entities.{UnconfirmedUser, UnconfirmedUserConfirmationToken}
 import backend.authservice.domain.shared.*
 import backend.dbshared.MappedEncodingWithCrushIfCorrupted
 import backend.domainshared.UnconfirmedUserId
-import io.getquill.MappedEncoding
+import io.getquill.{EntityQuery, MappedEncoding, Quoted, querySchema, quote}
 
 import java.util.UUID
+
+object UnconfirmedUserDbTable {
+  inline def apply(): Quoted[EntityQuery[UnconfirmedUser]] =
+    quote(querySchema[UnconfirmedUser]("unconfirmed_user"))
+}
+
+//object UnconfirmedUserDbTable extends DbTable[UnconfirmedUser] {
+//  override inline val name: "unconfirmed_user" = "unconfirmed_user"
+//}
 
 object UnconfirmedUserTableMappings {
   given MappedEncoding[UnconfirmedUserId, UUID] = MappedEncoding[UnconfirmedUserId, UUID](UnconfirmedUserId.unwrap)

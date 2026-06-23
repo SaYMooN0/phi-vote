@@ -1,6 +1,6 @@
 package backend.authservice.api.services
 
-import backend.authservice.api.Configs
+import backend.apishared.Configs
 import backend.authservice.domain.services.{PasswordHashingConfig, PasswordHashingService, UserPassword}
 import backend.authservice.domain.shared.PasswordHash
 import de.mkammerer.argon2.Argon2Factory.Argon2Types

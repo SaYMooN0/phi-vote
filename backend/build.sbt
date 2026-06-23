@@ -66,6 +66,7 @@ lazy val dbShared = (project in file("./lib/db-shared"))
   )
 
 lazy val apiShared = (project in file("./lib/api-shared"))
+  .dependsOn(domainShared)
   .settings(commonSettings)
   .settings(
     name := "api-shared",
@@ -74,7 +75,8 @@ lazy val apiShared = (project in file("./lib/api-shared"))
       "dev.zio" %% "zio-http" % zioHttpVersion,
       "dev.zio" %% "zio-json" % zioJsonVersion,
       "dev.zio" %% "zio-config-magnolia" % zioConfigVersion,
-      "dev.zio" %% "zio-config-typesafe" % zioConfigVersion
+      "dev.zio" %% "zio-config-typesafe" % zioConfigVersion,
+      "com.auth0" % "java-jwt" % "4.5.2"
     )
   )
 
@@ -106,7 +108,7 @@ lazy val authServiceApi = (project in file("./auth-service/api"))
 
     ),
 
-    Compile / mainClass := Some("AuthServiceMain"),
+    Compile / mainClass := Some("backend.authservice.api.AuthServiceMain"),
     Docker / packageName := "backend/auth-service",
     dockerExposedPorts := Seq(8180)
   )

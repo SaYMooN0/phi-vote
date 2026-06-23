@@ -1,6 +1,6 @@
 package backend.authservice.api.services
 
-import backend.authservice.api.Configs
+import backend.apishared.Configs
 import backend.authservice.domain.services.{EmailService, EmailServiceConfig}
 import backend.authservice.domain.shared.{Email, UserUniqueName}
 import zio.*

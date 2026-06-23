@@ -6,6 +6,8 @@
       <module name="backend.api-shared.test" target="21" />
       <module name="backend.auth-service-api.main" target="21" />
       <module name="backend.auth-service-api.test" target="21" />
+      <module name="backend.auth-service-auth-tokens.main" target="21" />
+      <module name="backend.auth-service-auth-tokens.test" target="21" />
       <module name="backend.auth-service-db.main" target="21" />
       <module name="backend.auth-service-db.test" target="21" />
       <module name="backend.auth-service-domain.main" target="21" />

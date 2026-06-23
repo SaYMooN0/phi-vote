@@ -1,13 +1,25 @@
 package backend.authservice.db
 
+import backend.authservice.domain.entities.AppUser
 import backend.authservice.domain.shared.*
 import backend.dbshared.{MappedEncodingWithCrushIfCorrupted, QuillMappings}
 import backend.domainshared.AppUserId
-import io.getquill.MappedEncoding
+import io.getquill.{EntityQuery, MappedEncoding, Quoted, querySchema, quote}
 
 import java.util.UUID
 
-object AppUserTableMappings {
+
+//
+//object AppUserDbTable extends DbTable[AppUser] {
+//  override inline val name: "app_user" = "app_user"
+//}
+
+object AppUserDbTable {
+  inline def apply(): Quoted[EntityQuery[AppUser]] =
+    quote(querySchema[AppUser]("app_user"))
+}
+
+object AppUserTable {
   given MappedEncoding[AppUserId, UUID] = QuillMappings.AppUserIdMappings.toUUID
 
   given MappedEncoding[UUID, AppUserId] = QuillMappings.AppUserIdMappings.fromUUID
