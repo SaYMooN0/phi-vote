@@ -1,147 +1,81 @@
 <script lang="ts">
-	import { ApiAuth } from '$lib/ts/backend';
-	import { InvalidInputErrList, toJustMsgObj, type InvalidInputErr } from '$lib/ts/core';
-	import { watch } from 'runed';
+	import AuthFormAlert from './_c/AuthFormAlert.svelte';
+	import AuthInlineAction from './_c/AuthInlineAction.svelte';
 	import SignInEmailInput from './_c/SignInEmailInput.svelte';
-	import SignInUniqueNameInput from './_c/SignInUniqueNameInput.svelte';
+	import AuthSubmitButton from './_c/AuthSubmitButton.svelte';
 	import SignInPasswordInput from './_c/SignInPasswordInput.svelte';
+	import SignInUniqueNameInput from './_c/SignInUniqueNameInput.svelte';
+	import { AuthPageState } from './page-state.svelte';
+	import { afterNavigate } from '$app/navigation';
 
-	let email = $state('');
-	let uniqueName = $state('');
-	let password = $state('');
-	watch(
-		() => email,
-		() => {
-			errMsgsObj.email = '';
-		}
-	);
+	const pageState = new AuthPageState();
 
-	let errMsgsObj = $state({ email: '', uniqueName: '', password: '', other: '' });
+	afterNavigate(({ to }) => {
+		if (!to?.url) {
+			return;
+		}
 
-	function submit(event: SubmitEvent) {
-		event.preventDefault();
-		const eList = InvalidInputErrList.Empty()
-			.ifOneOfAdd('email', [
-				{ cond: email.includes(' '), msg: 'Email cannot contain spaces' },
-				{ cond: !email.includes('@'), msg: 'Email must contain the @ symbol ' }
-			])
-			.ifOneOfAdd('uniqueName', [
-				{ cond: uniqueName.includes(' '), msg: 'Unique name cannot contain spaces' },
-				{ cond: uniqueName.length <= 3, msg: 'Unique name must be at least 3 characters long' },
-				{ cond: uniqueName.length >= 100, msg: 'Unique name is too long' }
-			])
-			.ifOneOfAdd('password', [
-				{ cond: uniqueName.includes(' '), msg: 'Password cannot contain spaces' },
-				{ cond: password.length <= 8, msg: 'Password must be at least 8 characters long' },
-				{ cond: password.length >= 200, msg: 'Password is a bit too long' }
-			]);
-		if (eList.any()) {
-			errMsgsObj = eList.toJustMsgObj();
-		} else {
-			makeRequest();
-		}
-	}
-	async function makeRequest() {
-		const response = await ApiAuth.POST<InvalidInputErr, { healthMsg: string }>('/sign-up', { email, uniqueName, password });
-		console.log(response);
-		if (response.isOk) {
-		} else if (response.errKey === 'InvalidInput') {
-			errMsgsObj = toJustMsgObj(response);
-		} else {
-			errMsgsObj = { other: response.msg, email: '', uniqueName: '', password: '' };
-		}
-	}
-	function signInWithGoogle() {
-		console.log('sign in with google');
-	}
+		pageState.syncModeFromUrl(to.url);
+	});
 </script>
 
-<svelte:head>
-	<title>Create account</title>
-</svelte:head>
+<main class="min-h-dvh bg-page text-ink">
+	<section class="mx-auto grid min-h-dvh w-full max-w-7xl grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(30rem,38rem)]">
+		<aside class="hidden border-r border-line bg-page lg:block" aria-hidden="true">
+			<div class="auth-reserved-panel h-full w-full"></div>
+		</aside>
 
-<main class="min-h-dvh bg-auth-paper text-auth-ink">
-	<section
-		class="
-			mx-auto grid min-h-dvh w-full max-w-6xl
-			grid-cols-1
-			lg:grid-cols-[minmax(0,1fr)_minmax(24rem,32rem)]
-		"
-	>
-		<aside
-			class="
-				hidden border-x border-auth-line bg-m-p-50
-				lg:block
-			"
-			aria-hidden="true"
-		></aside>
-
-		<section class="flex items-center justify-center px-6 py-12 sm:px-8 lg:px-12">
-			<div class="w-full max-w-md">
-				<header class="mb-10">
-					<p class="mb-3 text-sm font-semibold uppercase tracking-wider text-m-p-700">New account</p>
-
-					<h1 class="text-5xl font-semibold tracking-tight text-auth-ink sm:text-6xl">Sign up</h1>
-
-					<p class="mt-5 max-w-sm text-base leading-7 text-auth-muted">Create your profile with a unique name and secure password.</p>
+		<section class="flex items-center justify-center px-6 py-18">
+			<div class="w-full max-w-lg">
+				<header class="mb-8 text-center">
+					<h1 class="text-nowrap text-4xl font-semibold leading-none tracking-[-0.04em] text-ink sm:text-5xl">
+						{pageState.title}
+					</h1>
 				</header>
 
-				<form class="space-y-5" onsubmit={submit} novalidate>
-					<SignInUniqueNameInput bind:value={uniqueName} errMsg={errMsgsObj.uniqueName} />
-					<SignInEmailInput bind:value={email} errMsg={errMsgsObj.email} />
-					<SignInPasswordInput bind:value={password} errMsg={errMsgsObj.password} />
-					<p>{errMsgsObj.other}</p>
-					<button
-						class="
-							mt-2 flex min-h-13 w-full items-center justify-center rounded-xl
-							bg-m-p-700 px-5 text-base font-semibold text-white
-							transition-colors
-							hover:bg-m-p-800
-							active:bg-m-p-900
-							focus-visible:outline-2
-							focus-visible:outline-offset-2
-							focus-visible:outline-m-p-700
-						"
-						type="submit"
-					>
-						Create account
-					</button>
+				<form onsubmit={(event) => pageState.submit(event)} novalidate>
+					<div class="auth-input-bay" data-mode={pageState.current}>
+						<div class="auth-input-slot auth-unique" inert={pageState.current !== 'registration'}>
+							<SignInUniqueNameInput bind:value={pageState.uniqueName} errMsg={pageState.errors.uniqueName} />
+						</div>
+
+						<div class="auth-input-slot auth-email">
+							<SignInEmailInput bind:value={pageState.email} errMsg={pageState.errors.email} />
+						</div>
+
+						<div class="auth-input-slot auth-password">
+							<SignInPasswordInput bind:value={pageState.password} errMsg={pageState.errors.password} />
+						</div>
+					</div>
+
+					<AuthFormAlert msg={pageState.errors.other} />
+
+					<AuthSubmitButton label={pageState.submitLabel} isLoading={pageState.isLoading} />
 				</form>
 
-				<a
-					class="
-						mx-auto mt-5 block w-fit text-sm font-medium text-auth-muted
-						transition-colors
-						hover:text-m-p-700
-						focus-visible:outline-2
-						focus-visible:outline-offset-2
-						focus-visible:outline-m-p-700
-					"
-					href="/login"
-				>
-					I already have an account
-				</a>
+				<div class="mt-4 flex h-10 items-center justify-center">
+					<AuthInlineAction label={pageState.modeActionLabel} action={{ type: 'button', onclick: () => pageState.toggleMode() }} />
+				</div>
 
-				<div class="my-7 grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-auth-muted">
-					<span class="h-px bg-auth-line"></span>
-					<span class="text-xs font-semibold uppercase tracking-widest">or</span>
-					<span class="h-px bg-auth-line"></span>
+				<div
+					class="forgot-row flex h-9 items-center justify-center"
+					data-visible={pageState.current === 'login' ? true : undefined}
+					aria-hidden={pageState.current !== 'login'}
+					inert={pageState.current !== 'login'}
+				>
+					<AuthInlineAction label="I forgot my password" action={{ type: 'link', href: '/password-reset' }} />
+				</div>
+
+				<div class="my-7 grid grid-cols-[1fr_auto_1fr] items-center gap-4 text-muted">
+					<span class="h-px bg-line"></span>
+					<span class="text-[0.68rem] font-semibold uppercase tracking-[0.22em]">or</span>
+					<span class="h-px bg-line"></span>
 				</div>
 
 				<button
-					class="
-						flex min-h-13 w-full items-center justify-center gap-3 rounded-xl
-						border border-auth-line bg-auth-surface px-5 text-base font-semibold
-						text-auth-ink transition-colors
-						hover:border-auth-line-strong
-						hover:bg-m-p-50
-						active:bg-m-p-100
-						focus-visible:outline-2
-						focus-visible:outline-offset-2
-						focus-visible:outline-m-p-700
-					"
+					class="flex min-h-13 w-full items-center justify-center gap-3 rounded-xl border border-line bg-surface px-5 text-base font-semibold text-ink transition-[background-color,border-color] hover:border-line-strong hover:bg-brand-50 active:bg-brand-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
 					type="button"
-					onclick={signInWithGoogle}
+					onclick={() => pageState.signInWithGoogle()}
 				>
 					<svg class="size-5" viewBox="0 0 24 24" aria-hidden="true">
 						<path
@@ -162,9 +96,85 @@
 						/>
 					</svg>
 
-					<span>Sign in with Google</span>
+					<span>Continue with Google</span>
 				</button>
 			</div>
 		</section>
 	</section>
 </main>
+
+<style>
+	.auth-reserved-panel {
+		background-image: linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), var(--color-line) calc(100% - 1px));
+		background-size: clamp(4.5rem, 11vw, 8rem) 100%;
+		opacity: 0.64;
+	}
+
+	.auth-input-bay {
+		--slot-step: 6.5rem;
+		position: relative;
+		height: calc(var(--slot-step) * 3);
+		margin-bottom: 0.25rem;
+	}
+
+	.auth-input-slot {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 0;
+		transition:
+			top 180ms ease,
+			opacity 140ms ease,
+			visibility 0s linear 180ms;
+	}
+
+	.auth-unique {
+		top: 0;
+		opacity: 0;
+		pointer-events: none;
+		visibility: hidden;
+	}
+
+	.auth-email {
+		top: calc(var(--slot-step) * 0.5);
+	}
+
+	.auth-password {
+		top: calc(var(--slot-step) * 1.5);
+	}
+
+	.auth-input-bay[data-mode='registration'] .auth-unique {
+		opacity: 1;
+		pointer-events: auto;
+		visibility: visible;
+		transition:
+			top 180ms ease,
+			opacity 140ms ease,
+			visibility 0s;
+	}
+
+	.auth-input-bay[data-mode='registration'] .auth-email {
+		top: var(--slot-step);
+	}
+
+	.auth-input-bay[data-mode='registration'] .auth-password {
+		top: calc(var(--slot-step) * 2);
+	}
+
+	.forgot-row {
+		opacity: 0;
+		transition: opacity 120ms ease;
+	}
+
+	.forgot-row[data-visible='true'] {
+		opacity: 1;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.auth-input-slot,
+		.auth-input-bay[data-mode='registration'] .auth-unique,
+		.forgot-row {
+			transition: none;
+		}
+	}
+</style>

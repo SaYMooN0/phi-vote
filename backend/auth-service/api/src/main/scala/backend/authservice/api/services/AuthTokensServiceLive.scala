@@ -1,20 +1,11 @@
 package backend.authservice.api.services
 
-import backend.apishared.Configs
-import backend.authservice.domain.services.{AccessTokenIssuer, IssuedAccessToken, RefreshTokenSecurityService}
+import backend.authservice.db.RefreshTokenSessionDbTable
+import backend.authservice.domain.entities.*
+import backend.authservice.domain.services.*
 import backend.dbshared.DbQuill
 import backend.domainshared.AppUserId
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
-import com.auth0.jwt.interfaces.RSAKeyProvider
-import zio.*
-import zio.config.magnolia.deriveConfig
-
-import java.security.KeyFactory
-import java.security.interfaces.{RSAPrivateKey, RSAPublicKey}
-import java.security.spec.{PKCS8EncodedKeySpec, X509EncodedKeySpec}
-import java.time.Instant
-import java.util.{Base64, Date}
+import io.getquill.*
 import zio.*
 
 import java.time.Instant
@@ -29,38 +20,26 @@ private final class AuthTokensServiceLive private(
   import backend.authservice.db.RefreshTokenSessionTableMappings.given
   import db.*
 
-  override def issueNewPair(userId: AppUserId): Task[IssuedAuthTokens] =
+  override def issueNewPair(userId: AppUserId): Task[IssuedAuthTokens] = {
     for {
       now <- Clock.instant
-
       accessToken <- accessTokenIssuer.issueFor(userId)
-
       refreshToken <- refreshTokenSecurityService.generate
       refreshTokenHash <- refreshTokenSecurityService.hash(refreshToken)
-
       refreshTokenExpiresAt = now.plusSeconds(refreshTokenConfig.ttlSeconds)
 
       session = RefreshTokenSession(
-        id = RefreshTokenSessionId.createNew(),
-        userId = userId,
-        tokenHash = refreshTokenHash,
-        createdAt = now,
-        expiresAt = refreshTokenExpiresAt,
-        revokedAt = None,
-        replacedBySessionId = None
+        RefreshTokenSessionId.createNew(), userId, refreshTokenHash, now, refreshTokenExpiresAt,
+        revokedAt = None
       )
-
-      _ <- run {
-        RefreshTokenSessionDbTable()
-          .insertValue(lift(session))
+      insertSessionQuery = quote {
+        RefreshTokenSessionDbTable().insertValue(lift(session))
       }
-    } yield IssuedAuthTokens(
-      accessToken = accessToken,
-      refreshToken = refreshToken,
-      refreshTokenExpiresAt = refreshTokenExpiresAt
-    )
+      _ <- run(insertSessionQuery).unit
+    } yield IssuedAuthTokens(accessToken, refreshToken, refreshTokenExpiresAt)
+  }
 
-  override def refresh(refreshToken: RefreshTokenPlain): IO[RefreshTokenErr, IssuedAuthTokens] =
+  override def refresh(refreshToken: RefreshTokenPlain): IO[RefreshTokenErr, IssuedAuthTokens] = {
     for {
       now <- Clock.instant
 
@@ -68,11 +47,13 @@ private final class AuthTokensServiceLive private(
         .hash(refreshToken)
         .mapError(_ => RefreshTokenErr.NotFound)
 
-      existingSessionOpt <- run {
+      findSessionByHashQuery = quote {
         RefreshTokenSessionDbTable()
           .filter(_.tokenHash == lift(refreshTokenHash))
           .take(1)
       }
+
+      existingSessionOpt <- run(findSessionByHashQuery)
         .map(_.headOption)
         .mapError(_ => RefreshTokenErr.NotFound)
 
@@ -81,40 +62,31 @@ private final class AuthTokensServiceLive private(
         .orElseFail(RefreshTokenErr.NotFound)
 
       result <-
-        if existingSession.revokedAt.nonEmpty then
+        if (existingSession.revokedAt.nonEmpty) {
           revokeAllForUser(existingSession.userId, now)
-            .as(RefreshTokenErr.ReuseDetected)
-            .flip
-
-        else if !existingSession.expiresAt.isAfter(now) then
+            *> ZIO.fail(RefreshTokenErr.ReuseDetected)
+        } else if (!existingSession.expiresAt.isAfter(now)) {
           ZIO.fail(RefreshTokenErr.Expired)
-
-        else
+        } else {
           rotateActiveSession(existingSession, now)
+        }
     } yield result
+  }
 
-  override def revoke(refreshToken: RefreshTokenPlain): Task[Unit] =
+  override def revoke(refreshToken: RefreshTokenPlain): Task[Unit] = {
     for {
       now <- Clock.instant
-
       refreshTokenHash <- refreshTokenSecurityService.hash(refreshToken)
-
-      _ <- run {
+      revokeByHashQuery = quote {
         RefreshTokenSessionDbTable()
-          .filter(session =>
-            session.tokenHash == lift(refreshTokenHash) &&
-              session.revokedAt.isEmpty
-          )
-          .update(
-            _.revokedAt -> lift(Some(now))
-          )
+          .filter(session => session.tokenHash == lift(refreshTokenHash) && session.revokedAt.isEmpty)
+          .update(_.revokedAt -> lift(Option(now)))
       }
+      _ <- run(revokeByHashQuery).unit
     } yield ()
+  }
 
-  private def rotateActiveSession(
-                                   existingSession: RefreshTokenSession,
-                                   now: Instant
-                                 ): IO[RefreshTokenErr, IssuedAuthTokens] =
+  private def rotateActiveSession(existingSession: RefreshTokenSession, now: Instant): IO[RefreshTokenErr, IssuedAuthTokens] =
     for {
       newAccessToken <- accessTokenIssuer
         .issueFor(existingSession.userId)
@@ -128,66 +100,67 @@ private final class AuthTokensServiceLive private(
         .hash(newRefreshToken)
         .mapError(_ => RefreshTokenErr.NotFound)
 
-      newRefreshTokenExpiresAt =
-        now.plusSeconds(refreshTokenConfig.ttlSeconds)
+      newRefreshTokenExpiresAt = now.plusSeconds(refreshTokenConfig.ttlSeconds)
 
       newSession = RefreshTokenSession(
-        id = RefreshTokenSessionId.createNew(),
-        userId = existingSession.userId,
-        tokenHash = newRefreshTokenHash,
-        createdAt = now,
-        expiresAt = newRefreshTokenExpiresAt,
-        revokedAt = None,
-        replacedBySessionId = None
+        RefreshTokenSessionId.createNew(),
+        existingSession.userId, newRefreshTokenHash,
+        now, newRefreshTokenExpiresAt,
+        revokedAt = None
       )
 
       _ <- transaction {
         for {
-          updatedCount <- run {
-            RefreshTokenSessionDbTable()
-              .filter(session =>
-                session.id == lift(existingSession.id) &&
-                  session.revokedAt.isEmpty
-              )
-              .update(
-                _.revokedAt -> lift(Some(now)),
-                _.replacedBySessionId -> lift(Some(newSession.id))
-              )
-          }
+
+          updatedCount <- run(
+            revokeExistingSessionQuery(
+              existingSession.id,
+              Option(now)
+            )
+          )
 
           _ <-
             if updatedCount == 1 then ZIO.unit
             else ZIO.fail(RuntimeException("Refresh token session is already revoked or rotated"))
 
-          _ <- run {
+          insertNewSessionQuery =
             RefreshTokenSessionDbTable()
               .insertValue(lift(newSession))
-          }
+
+          _ <- run(quote(insertNewSessionQuery)).unit
         } yield ()
       }.mapError(_ => RefreshTokenErr.Revoked)
-    } yield IssuedAuthTokens(
-      newAccessToken,
-      newRefreshToken,
-      newRefreshTokenExpiresAt
-    )
+    } yield IssuedAuthTokens(newAccessToken, newRefreshToken, newRefreshTokenExpiresAt)
 
-  private def revokeAllForUser(
-                                userId: AppUserId,
-                                now: Instant
-                              ): IO[RefreshTokenErr, Unit] =
-    run {
+  private inline def revokeExistingSessionQuery(
+                                                 sessionId: RefreshTokenSessionId,
+                                                 revokedAt: Option[Instant]
+                                               ) =
+    quote {
       RefreshTokenSessionDbTable()
         .filter(session =>
-          session.userId == lift(userId) &&
+          session.id == lift(sessionId) &&
             session.revokedAt.isEmpty
         )
         .update(
-          _.revokedAt -> lift(Some(now))
+          _.revokedAt -> lift(revokedAt)
         )
     }
-      .unit
-      .mapError(_ => RefreshTokenErr.Revoked)
+  private def revokeAllForUser(userId: AppUserId, now: Instant): IO[RefreshTokenErr, Unit] = {
+    for {
+      revokeAllForUserQuery = quote {
+        RefreshTokenSessionDbTable()
+          .filter(session => session.userId == lift(userId) && session.revokedAt.isEmpty)
+          .update(_.revokedAt -> lift(Option(now)))
+      }
+
+      _ <- run(revokeAllForUserQuery)
+        .unit
+        .mapError(_ => RefreshTokenErr.Revoked)
+    } yield ()
+  }
 }
+
 object AuthTokensServiceLive {
 
   val layer: ZLayer[

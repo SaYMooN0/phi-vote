@@ -82,10 +82,13 @@ export const ApiVoting = new BackendService('voting');
 
 export type Result<E extends HasErrKey, A> =
     | { isOk: true; } & A
-    | { isOk: false } & (FetchErr | E);
+    | { isOk: false } & BackendErr<E>;
 
-export type BackendErr = FetchErr | HasErrKey;
-
+export type BackendErr<E extends HasErrKey> = FetchErr | TypicalBackendErr | E;
+export type TypicalBackendErr =
+    | { errKey: 'InternalServerError', msg: string, extraDetails?: string }
+    | { errKey: 'JustMsg', msg: string }
+    | { errKey: 'MalformedJson', msg: string }
 export type FetchErr = {
     msg: string,
     errKey: 'FetchErr',

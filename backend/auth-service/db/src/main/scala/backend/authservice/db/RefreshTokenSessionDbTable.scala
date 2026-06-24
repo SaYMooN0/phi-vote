@@ -8,8 +8,8 @@ import io.getquill.{EntityQuery, MappedEncoding, Quoted, querySchema, quote}
 import java.util.UUID
 
 object RefreshTokenSessionDbTable {
-  inline def apply(): Quoted[EntityQuery[RefreshTokenSession]] = {
-    quote(querySchema[RefreshTokenSession]("refresh_token_session"))
+  inline def apply(): EntityQuery[RefreshTokenSession] = {
+    querySchema[RefreshTokenSession]("refresh_token_session")
   }
 }
 

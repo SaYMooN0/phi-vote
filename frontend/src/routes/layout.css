@@ -1,26 +1,51 @@
 @import 'tailwindcss';
 
 @theme {
-	--color-m-p-50: #f8f3ff;
-	--color-m-p-100: #efe4ff;
-	--color-m-p-200: #deccff;
-	--color-m-p-300: #c8adff;
-	--color-m-p-400: #b58fff;
-	--color-m-p-500: #ab7dfc;
-	--color-m-p-600: #9462e8;
-	--color-m-p-700: #7d4dcc;
-	--color-m-p-800: #653ca6;
-	--color-m-p-900: #44286f;
+	--font-sans: "Rubik", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-	--color-auth-paper: #fbfafc;
-	--color-auth-surface: #ffffff;
-	--color-auth-field: #ffffff;
-	--color-auth-ink: #18151f;
-	--color-auth-muted: #71687c;
-	--color-auth-line: #ded6ea;
-	--color-auth-line-strong: #c9bbdc;
+	--color-brand-50: #f6f6ff;
+	--color-brand-100: #ececff;
+	--color-brand-200: #dadaff;
+	--color-brand-300: #bfc0ff;
+	--color-brand-400: #9b9dff;
+	--color-brand-500: #797bff;
+	--color-brand-600: #6264e8;
+	--color-brand-700: #4f51c5;
+	--color-brand-800: #41429d;
+	--color-brand-900: #303174;
+	--color-brand-soft: #ececff;
 
-	--color-auth-danger: #b84254;
-	--color-auth-danger-soft: #fff6f7;
+	--color-page: #f8f8fc;
+	--color-surface: #ffffff;
+	--color-surface-quiet: #fbfbfe;
+	--color-field: #ffffff;
+	--color-ink: #171724;
+	--color-muted: #68687d;
+	--color-line: #dfdfeb;
+	--color-line-strong: #c3c3d8;
 
+	--color-danger: #b84254;
+	--color-danger-soft: #fff4f6;
+	--color-success: #26745f;
+	--color-success-soft: #eefaf6;
+}
+
+:root {
+	font-family: var(--font-sans);
+	background: var(--color-page);
+	color: var(--color-ink);
+}
+
+body {
+	min-width: 320px;
+	margin: 0;
+	background: var(--color-page);
+	color: var(--color-ink);
+}
+
+button,
+input,
+textarea,
+select {
+	font: inherit;
 }

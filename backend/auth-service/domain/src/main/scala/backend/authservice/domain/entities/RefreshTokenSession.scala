@@ -10,8 +10,7 @@ final case class RefreshTokenSession(
                                       tokenHash: RefreshTokenHash,
                                       createdAt: Instant,
                                       expiresAt: Instant,
-                                      revokedAt: Option[Instant],
-                                      replacedBySessionId: Option[RefreshTokenSessionId]
+                                      revokedAt: Option[Instant]
                                     ) {
   def isActiveAt(now: Instant): Boolean =
     revokedAt.isEmpty && expiresAt.isAfter(now)
