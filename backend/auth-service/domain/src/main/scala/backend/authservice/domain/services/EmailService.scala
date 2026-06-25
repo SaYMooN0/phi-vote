@@ -24,10 +24,3 @@ trait EmailService {
 
 }
 
-final case class EmailServiceConfig(
-                                     sender: String,
-                                     host: String,
-                                     port: Int,
-                                     user: String,
-                                     pass: String
-                                   )

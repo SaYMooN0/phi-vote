@@ -1,12 +1,12 @@
 package backend.authservice.api.services
 
 import backend.apishared.Configs
-import backend.authservice.domain.services.{EmailService, EmailServiceConfig}
+import backend.authservice.api.configs.EmailServiceConfig
+import backend.authservice.domain.services.EmailService
 import backend.authservice.domain.shared.{Email, UserUniqueName}
 import zio.*
 import zio.config.magnolia.deriveConfig
 import zio.config.typesafe.TypesafeConfigProvider
-
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.util.Properties
@@ -124,10 +124,6 @@ private final class EmailServiceLive private(config: EmailServiceConfig) extends
     message.setContent(content, "text/html; charset=utf-8")
     ZIO.succeed(message)
   }
-}
-
-object EmailServiceConfig {
-  given Config[EmailServiceConfig] = deriveConfig[EmailServiceConfig]
 }
 
 object EmailServiceLive {

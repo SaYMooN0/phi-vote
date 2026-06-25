@@ -7,9 +7,9 @@ import zio.config.magnolia.deriveConfig
 import zio.http.Request
 
 final case class CurrentUserCtxConfig(
-                                       accessTokenCookieName: String,
-                                       unauthenticatedCtxCookieName: String
-                                     )
+  accessTokenCookie: String,
+  unauthenticatedCtxIdentifierCookie: String
+)
 
 object CurrentUserCtxConfig {
   given Config[CurrentUserCtxConfig] = deriveConfig[CurrentUserCtxConfig]
@@ -20,37 +20,38 @@ trait CurrentUserCtxService {
 }
 
 private final class CurrentUserCtxServiceLive(
-                                               config: CurrentUserCtxConfig,
-                                               accessTokenReader: AccessTokenReader
-                                             ) extends CurrentUserCtxService {
+  config: CurrentUserCtxConfig,
+  accessTokenReader: AccessTokenReader
+) extends CurrentUserCtxService {
 
 
   override def read(httpReq: Request): UIO[CurrentUserCtx] = {
-    def unauthenticatedCtx: CurrentUserCtx =
-      cookieValue(config.unauthenticatedCtxCookieName, httpReq)
-        .flatMap(UnauthenticatedCtxId.createFrom) match {
+    def unauthenticatedCtx: CurrentUserCtx = {
+      cookieValue(config.unauthenticatedCtxIdentifierCookie, httpReq).flatMap(UnauthenticatedCtxId.createFrom) match {
         case Some(id) => CurrentUserCtx.KnownUnauthenticated(id)
         case None => CurrentUserCtx.Anonymous
       }
+    }
 
-    cookieValue(config.accessTokenCookieName, httpReq) match {
+    cookieValue(config.accessTokenCookie, httpReq) match {
+      case None => ZIO.succeed(unauthenticatedCtx)
       case Some(accessToken) => {
         accessTokenReader
           .read(accessToken)
           .map(claims => CurrentUserCtx.Authenticated(claims.userId))
           .catchAll(_ => ZIO.succeed(unauthenticatedCtx))
       }
-      case None => ZIO.succeed(unauthenticatedCtx)
     }
 
   }
 
-  private def cookieValue(name: String, httpReq: Request): Option[String] =
+  private def cookieValue(name: String, httpReq: Request): Option[String] = {
     httpReq
       .cookies
       .find(_.name == name)
       .map(_.content)
       .filter(_.nonEmpty)
+  }
 }
 
 object CurrentUserCtxServiceLive {
@@ -75,5 +76,5 @@ object CurrentUserCtxServiceLive {
     Throwable,
     CurrentUserCtxService
   ] =
-    Configs.makeLayer[CurrentUserCtxConfig]("currentUserCtx") >>> layer
+    Configs.makeLayer[CurrentUserCtxConfig]("webAuth.authCookieNames") >>> layer
 }

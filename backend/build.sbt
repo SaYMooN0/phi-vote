@@ -8,15 +8,15 @@ ThisBuild / version := "0.1.0"
 
 lazy val javaVersion = "21"
 
-lazy val zioVersion = "2.1.26"
-lazy val zioHttpVersion = "3.8.0"
-lazy val zioJsonVersion = "0.7.44"
+lazy val zioVersion       = "2.1.26"
+lazy val zioHttpVersion   = "3.8.0"
+lazy val zioJsonVersion   = "0.7.44"
 lazy val zioConfigVersion = "4.0.7"
 
-lazy val quillVersion = "4.8.6"
+lazy val quillVersion    = "4.8.6"
 lazy val postgresVersion = "42.7.4"
 
-lazy val argon2Version = "2.12"
+lazy val argon2Version   = "2.12"
 lazy val javaMailVersion = "1.6.2"
 
 ThisBuild / dependencyOverrides ++= Seq(
@@ -87,13 +87,13 @@ lazy val authServiceDomain = (project in file("./auth-service/domain"))
   .settings(
     name := "auth-service-domain"
   )
-lazy val authServiceDb = (project in file("./auth-service/db"))
+lazy val authServiceDb     = (project in file("./auth-service/db"))
   .settings(commonSettings)
   .dependsOn(dbShared, authServiceDomain)
   .settings(
     name := "auth-service-db"
   )
-lazy val authServiceApi = (project in file("./auth-service/api"))
+lazy val authServiceApi    = (project in file("./auth-service/api"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(apiShared, authServiceDb)
   .settings(commonSettings)
@@ -112,7 +112,7 @@ lazy val authServiceApi = (project in file("./auth-service/api"))
     Docker / packageName := "backend/auth-service",
     dockerExposedPorts := Seq(8180)
   )
-lazy val votingService = (project in file("voting-service"))
+lazy val votingService     = (project in file("voting-service"))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(
     domainShared,
@@ -150,13 +150,13 @@ lazy val dockerSettings = Seq(
 lazy val dotenvSettings = Seq(
   Compile / run / fork := true,
   Compile / run / envVars ++= {
-    val log = sLog.value
+    val log     = sLog.value
     val rootDir = (ThisBuild / baseDirectory).value
     loadDotEnv(rootDir / ".env", log)
   },
   Test / fork := true,
   Test / envVars ++= {
-    val log = sLog.value
+    val log     = sLog.value
     val rootDir = (ThisBuild / baseDirectory).value
     loadDotEnv(rootDir / ".env", log)
   }
@@ -170,25 +170,8 @@ def loadDotEnv(file: File, log: Logger): Map[String, String] = {
     val source = Source.fromFile(file, "UTF-8")
 
     try {
-      val parsed = source
-        .getLines()
-        .zipWithIndex
-        .flatMap { case (rawLine, index) =>
-          val line = rawLine.trim
-
-          if (line.isEmpty || line.startsWith("#")) {
-            None
-          } else {
-            line.split("=", 2).toList match {
-              case key :: value :: Nil if key.trim.nonEmpty => Some(key.trim -> value.trim)
-              case _ => {
-                log.warn(s"[dotenv] ${file.getName}:${index + 1}: cannot parse line, skipping")
-                None
-              }
-            }
-          }
-        }
-        .toVector
+      val lines  = source.getLines().toVector
+      val parsed = parseDotEnvLines(lines, file.getName, log)
 
       val duplicates =
         parsed
@@ -212,3 +195,139 @@ def loadDotEnv(file: File, log: Logger): Map[String, String] = {
     }
   }
 }
+
+def parseDotEnvLines(lines: Vector[String], fileName: String, log: Logger): Vector[(String, String)] = {
+  val parsed = Vector.newBuilder[(String, String)]
+  var index  = 0
+
+  while (index < lines.length) {
+    val rawLine     = lines(index)
+    val trimmedLine = rawLine.trim
+
+    if (trimmedLine.isEmpty || trimmedLine.startsWith("#")) {
+      index += 1
+    } else {
+      val equalsIndex = rawLine.indexOf("=")
+
+      if (equalsIndex < 0) {
+        log.warn(s"[dotenv] $fileName:${index + 1}: cannot parse line, skipping")
+        index += 1
+      } else {
+        val key      = rawLine.substring(0, equalsIndex).trim
+        val rawValue = rawLine.substring(equalsIndex + 1).trim
+
+        if (key.isEmpty) {
+          log.warn(s"[dotenv] $fileName:${index + 1}: empty key, skipping")
+          index += 1
+        } else if (rawValue.startsWith("'")) {
+          val parsedMultiline = parseSingleQuotedValue(
+            key = key,
+            firstValuePart = rawValue.drop(1),
+            firstLineIndex = index,
+            lines = lines,
+            fileName = fileName,
+            log = log
+          )
+
+          parsedMultiline match {
+            case Some((value, nextIndex)) => {
+              parsed += key -> value
+              index = nextIndex
+            }
+            case None => index = lines.length
+          }
+        } else {
+          parsed += key -> rawValue
+          index += 1
+        }
+      }
+    }
+  }
+
+  parsed.result()
+}
+
+def parseSingleQuotedValue(
+  key: String,
+  firstValuePart: String,
+  firstLineIndex: Int,
+  lines: Vector[String],
+  fileName: String,
+  log: Logger
+): Option[(String, Int)] = {
+  val firstClosingQuoteIndex = findClosingSingleQuote(firstValuePart)
+
+  if (firstClosingQuoteIndex >= 0) {
+    val value = firstValuePart.take(firstClosingQuoteIndex)
+    val rest  = firstValuePart.drop(firstClosingQuoteIndex + 1).trim
+
+    if (rest.nonEmpty && !rest.startsWith("#")) {
+      log.warn(
+        s"[dotenv] $fileName:${firstLineIndex + 1}: extra characters after closing quote for key '$key', ignoring"
+      )
+    }
+
+    Some(value -> (firstLineIndex + 1))
+  } else {
+    val valueBuilder = new StringBuilder(firstValuePart)
+
+    var index  = firstLineIndex + 1
+    var closed = false
+
+    while (index < lines.length && !closed) {
+      val line              = lines(index)
+      val closingQuoteIndex = findClosingSingleQuote(line)
+
+      valueBuilder.append('\n')
+
+      if (closingQuoteIndex >= 0) {
+        valueBuilder.append(line.take(closingQuoteIndex))
+
+        val rest = line.drop(closingQuoteIndex + 1).trim
+
+        if (rest.nonEmpty && !rest.startsWith("#")) {
+          log.warn(
+            s"[dotenv] $fileName:${index + 1}: extra characters after closing quote for key '$key', ignoring"
+          )
+        }
+
+        closed = true
+      } else {
+        valueBuilder.append(line)
+      }
+
+      index += 1
+    }
+
+    if (closed) {
+      Some(valueBuilder.result() -> index)
+    } else {
+      log.warn(
+        s"[dotenv] $fileName:${firstLineIndex + 1}: unclosed single-quoted value for key '$key', skipping"
+      )
+      None
+    }
+  }
+}
+
+def findClosingSingleQuote(value: String): Int = {
+  var index   = 0
+  var escaped = false
+
+  while (index < value.length) {
+    val char = value.charAt(index)
+
+    if (escaped) {
+      escaped = false
+    } else if (char == '\\') {
+      escaped = true
+    } else if (char == '\'') {
+      return index
+    }
+
+    index += 1
+  }
+
+  -1
+}
+

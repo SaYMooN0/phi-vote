@@ -27,11 +27,17 @@
 			placeholder=" "
 			aria-invalid={errMsg ? true : undefined}
 			aria-describedby={`${inputName}-error`}
-			class="input-field peer block min-h-13 w-full rounded-xl border border-line bg-field px-4 py-2.5 text-lg text-ink outline-none transition-[background-color,border-color,box-shadow] hover:border-line-strong focus:border-brand-500 focus:shadow-[0_0_0_4px_var(--color-brand-soft)] not-placeholder-shown:border-brand-500 data-[error=true]:border-danger data-[error=true]:bg-danger-soft data-[error=true]:focus:shadow-[0_0_0_4px_var(--color-danger-soft)]"
+			class="input-field peer block w-full rounded-xl border border-line bg-field px-4 py-2.75 text-lg text-ink outline-none transition-[background-color,border-color]
+		    hover:border-line-strong
+		 	focus:border-brand-600 not-placeholder-shown:border-brand-600
+			data-[error=true]:border-danger data-[error=true]:bg-danger-soft data-[error=true]:focus:shadow-[0_0_0_4px_var(--color-danger-soft)]"
 		/>
 
 		<span
-			class="input-caption pointer-events-none absolute left-3 top-0 flex -translate-y-1/2 items-center gap-1.5 rounded-full px-1.5 text-sm leading-none text-brand-700 transition-[top,color,font-size,background] [&_svg]:size-5 [&_svg]:shrink-0 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-focus:top-0! peer-focus:text-sm! peer-focus:text-brand-700! peer-data-[error=true]:text-danger!"
+			class="input-caption pointer-events-none absolute left-4 top-0 flex -translate-y-1/2 items-center gap-1.5 rounded-lg px-0.5 text-sm leading-none text-brand-600 transition-[top,color,font-size,background,box-shadow]
+			[&_svg]:size-5 [&_svg]:shrink-0
+			peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-muted peer-focus:text-brand-600 peer-focus:top-0! peer-focus:text-sm!
+			peer-data-[error=true]:text-danger!"
 		>
 			{@render icon()}
 			<span>{fieldName}</span>
@@ -55,7 +61,8 @@
 
 	.input-field:focus + .input-caption,
 	.input-field:not(:placeholder-shown) + .input-caption {
-		background: linear-gradient(to bottom, var(--color-page) 0 calc(50% - 2px), var(--color-field) calc(50% - 2px) 100%);
+		background: var(--color-field);
+		box-shadow: 0px -3px 7px 5px var(--color-field);
 	}
 
 	.input-field[data-error='true']:focus + .input-caption,

@@ -37,10 +37,9 @@
 <style>
 	.auth-submit-label {
 		font-size: 1.25rem;
-		font-weight: 600;
-		letter-spacing: 0.045em;
+		font-weight: 500;
+		letter-spacing: 0.075em;
 		line-height: 1;
-		transform: scaleX(1.04);
 		transform-origin: center;
 	}
 

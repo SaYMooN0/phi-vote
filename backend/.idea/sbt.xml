@@ -8,15 +8,15 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/auth-service/api" />
-            <option value="$PROJECT_DIR$/auth-service/db" />
-            <option value="$PROJECT_DIR$/auth-service/domain" />
-            <option value="$PROJECT_DIR$/lib/api-shared" />
-            <option value="$PROJECT_DIR$/lib/db-shared" />
-            <option value="$PROJECT_DIR$/lib/domain-shared" />
-            <option value="$PROJECT_DIR$/project" />
-            <option value="$PROJECT_DIR$/voting-service" />
+            <option value="E:\phivote\backend" />
+            <option value="E:\phivote\backend\auth-service\api" />
+            <option value="E:\phivote\backend\auth-service\db" />
+            <option value="E:\phivote\backend\auth-service\domain" />
+            <option value="E:\phivote\backend\lib\api-shared" />
+            <option value="E:\phivote\backend\lib\db-shared" />
+            <option value="E:\phivote\backend\lib\domain-shared" />
+            <option value="E:\phivote\backend\project" />
+            <option value="E:\phivote\backend\voting-service" />
           </set>
         </option>
         <option name="sbtVersion" value="1.12.11" />

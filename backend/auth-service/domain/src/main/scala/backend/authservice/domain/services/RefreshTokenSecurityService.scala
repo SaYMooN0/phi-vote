@@ -9,6 +9,3 @@ trait RefreshTokenSecurityService {
 
   def hash(token: RefreshTokenPlain): Task[RefreshTokenHash]
 }
-
-final case class RefreshTokenConfig(ttlSeconds: Long, hmacSecret: String)
-

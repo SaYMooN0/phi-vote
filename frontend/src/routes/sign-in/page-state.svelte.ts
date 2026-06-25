@@ -4,7 +4,10 @@ import { ApiAuth } from '$lib/ts/backend';
 import { InvalidInputErrList, toJustMsgObj, type InvalidInputErr } from '$lib/ts/core';
 import { watch } from 'runed';
 
-export type AuthMode = 'registration' | 'login';
+export type PageCurrentState =
+	| 'sign-up'
+	| 'login'
+	| 'confirmation-sent';
 
 type PageErrs = {
 	email: string;
@@ -19,16 +22,8 @@ function emptyErrors(): PageErrs {
 	return { email: '', uniqueName: '', password: '', other: '' };
 }
 
-function msgFromBackendErr(err: { msg?: string; errKey: string }): string {
-	return err.msg ?? 'Could not complete the request. Please try again.';
-}
 
-
-function modeFromSearchParams(searchParams: URLSearchParams): AuthMode {
-	return searchParams.get('current') === 'login' ? 'login' : 'registration';
-}
-
-function hrefForMode(mode: AuthMode, href: string): string {
+function hrefForMode(mode: PageCurrentState, href: string): string {
 	const url = new URL(href, window.location.origin);
 
 	url.searchParams.set('current', mode);
@@ -37,7 +32,7 @@ function hrefForMode(mode: AuthMode, href: string): string {
 }
 
 export class AuthPageState {
-	current = $state<AuthMode>('registration');
+	current = $state<PageCurrentState>('sign-up');
 
 	email = $state('');
 	uniqueName = $state('');
@@ -46,35 +41,37 @@ export class AuthPageState {
 	errors = $state<PageErrs>(emptyErrors());
 	isLoading = $state(false);
 
-	title = $derived(this.current === 'registration' ? 'Create a new account' : 'Log into your account');
-	submitLabel = $derived(this.current === 'registration' ? 'Create account' : 'Log in');
-	modeActionLabel = $derived(this.current === 'registration' ? 'I already have an account' : "I don't have an account yet");
+	title = $derived(this.current === 'confirmation-sent' ? 'Check your email' : this.current === 'sign-up' ? 'Create a new account' : 'Log into your account');
+	submitLabel = $derived(this.current === 'sign-up' ? 'Create account' : 'Log in');
+	modeActionLabel = $derived(this.current === 'sign-up' ? 'I already have an account' : "I don't have an account yet");
 
 	constructor() {
 		watch(
 			() => this.uniqueName,
-			() => this.clearFieldError('uniqueName')
+			() => this.clearFieldErr('uniqueName')
 		);
 		watch(
 			() => this.email,
-			() => this.clearFieldError('email')
+			() => this.clearFieldErr('email')
 		);
 		watch(
 			() => this.password,
-			() => this.clearFieldError('password')
+			() => this.clearFieldErr('password')
 		);
 	}
 	toggleMode() {
-		this.setMode(this.current === 'registration' ? 'login' : 'registration');
+		this.setCurrentState(this.current === 'sign-up' ? 'login' : 'sign-up', true);
 	}
 
-	setMode(mode: AuthMode, options: { updateUrl?: boolean } = { updateUrl: true }) {
-		if (this.isLoading || mode === this.current) return;
+	setCurrentState(mode: PageCurrentState, updateUrl: boolean) {
+		if (this.isLoading || mode === this.current) {
+			return;
+		}
 
-		this.clearErrors();
+		this.clearErrs();
 		this.current = mode;
 
-		if (options.updateUrl !== false && browser) {
+		if (updateUrl !== false && browser) {
 			const url = hrefForMode(mode, window.location.href);
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			pushState(url, {});
@@ -82,32 +79,38 @@ export class AuthPageState {
 	}
 
 	syncModeFromUrl(url: URL) {
-		const mode = modeFromSearchParams(url.searchParams);
+		const stateFromUrl = url.searchParams.get('current');
+		if (stateFromUrl === this.current) { return; }
+		const normalized: PageCurrentState =
+			stateFromUrl === 'confirmation-sent' ? stateFromUrl :
+		    stateFromUrl === 'login'             ? stateFromUrl :
+			'sign-up';
+		this.setCurrentState(normalized)
 
-		if (mode === this.current) return;
 
-		this.setMode(mode, { updateUrl: false });
 	}
 
 	async submit(event: SubmitEvent) {
 		event.preventDefault();
-
-		if (this.isLoading) return;
-
-		this.clearErrors();
-
-		const validationErrors = this.current === 'registration' ? this.validateRegistration() : this.validateLogin();
-
-		if (validationErrors.any()) {
-			this.setErrors(validationErrors.toJustMsgObj<Partial<PageErrs>>());
+		if (this.isLoading) {
 			return;
 		}
 
-		await this.makeRequest();
+		this.clearErrs();
+
+		const validationErrors = this.current === 'sign-up' ? this.validateRegistration() : this.validateLogin();
+
+		if (validationErrors.any()) {
+			this.setErrs(validationErrors.toJustMsgObj<Partial<PageErrs>>());
+			return;
+		}
+
+		if (this.current === 'sign-up') { this.makeSignUpRequest(); }
+		else if (this.current === 'login') { this.makeLoginRequest(); }
 	}
 
 	signInWithGoogle() {
-		this.clearErrors();
+		this.clearErrs();
 		console.log('sign in with google');
 	}
 
@@ -141,43 +144,60 @@ export class AuthPageState {
 			]);
 	}
 
-	private async makeRequest() {
+	private async makeSignUpRequest() {
 		this.isLoading = true;
 
-		try {
-			const response = this.current === 'registration'
-				? await ApiAuth.POST<InvalidInputErr, AuthSuccess>('/sign-up', {
-					email: this.email,
-					uniqueName: this.uniqueName,
-					password: this.password
-				})
-				: await ApiAuth.POST<InvalidInputErr, AuthSuccess>('/login', {
-					email: this.email,
-					password: this.password
-				});
+		const response = await ApiAuth.POST<InvalidInputErr, AuthSuccess>('/sign-up', {
+			email: this.email,
+			uniqueName: this.uniqueName,
+			password: this.password
+		});
 
-			if (response.isOk) return;
+		this.isLoading = false;
+		console.log(response);
 
-			if (response.errKey === 'InvalidInput') {
-				this.setErrors(toJustMsgObj<Partial<PageErrs>>(response));
-				return;
-			}
-
-			this.errors.other = msgFromBackendErr(response);
-		} finally {
-			this.isLoading = false;
+		if (response.isOk) {
+			return;
 		}
+
+		if (response.errKey === 'InvalidInput') {
+			this.setErrs(toJustMsgObj<Partial<PageErrs>>(response));
+			return;
+		}
+
+		this.errors.other = response.msg ?? 'Could not complete the sign up request. Please try again later';
 	}
 
-	private setErrors(errors: Partial<PageErrs>) {
+	private async makeLoginRequest() {
+		this.isLoading = true;
+
+		const response = await ApiAuth.POST<InvalidInputErr, AuthSuccess>('/login', {
+			email: this.email,
+			password: this.password
+		})
+		this.isLoading = false;
+		console.log(response);
+
+		if (response.isOk) {
+			return;
+		}
+
+		if (response.errKey === 'InvalidInput') {
+			this.setErrs(toJustMsgObj<Partial<PageErrs>>(response));
+			return;
+		}
+
+		this.errors.other = response.msg ?? 'Could not complete the login request. Please try again later';
+	}
+	private setErrs(errors: Partial<PageErrs>) {
 		this.errors = { ...emptyErrors(), ...errors };
 	}
 
-	private clearErrors() {
+	private clearErrs() {
 		this.errors = emptyErrors();
 	}
 
-	private clearFieldError(key: keyof Omit<PageErrs, 'other'>) {
+	private clearFieldErr(key: keyof Omit<PageErrs, 'other'>) {
 		this.errors[key] = '';
 		this.errors.other = '';
 	}

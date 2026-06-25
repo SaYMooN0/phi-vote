@@ -37,7 +37,6 @@
 }
 
 body {
-	min-width: 320px;
 	margin: 0;
 	background: var(--color-page);
 	color: var(--color-ink);

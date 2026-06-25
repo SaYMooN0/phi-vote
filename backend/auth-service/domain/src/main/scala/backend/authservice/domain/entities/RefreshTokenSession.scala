@@ -16,13 +16,6 @@ final case class RefreshTokenSession(
     revokedAt.isEmpty && expiresAt.isAfter(now)
 }
 
-enum RefreshTokenErr {
-  case Missing
-  case NotFound
-  case Expired
-  case Revoked
-  case ReuseDetected
-}
 
 object RefreshTokenSessionId extends UuidWrapperCompanion
 
