@@ -1,0 +1,29 @@
+services:
+  auth-service-db:
+    image: postgres:17-alpine
+    container_name: auth-service-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: postgres
+
+      AUTH_SERVICE_DB_NAME: ${AUTH_SERVICE_DB_NAME}
+      VOTING_SERVICE_DB_NAME: ${VOTING_SERVICE_DB_NAME}
+
+    ports:
+      - "${POSTGRES_HOST_PORT}:5432"
+
+    volumes:
+      - auth_service_db_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  auth_service_db_data:

@@ -85,7 +85,7 @@ export class AuthPageState {
 			stateFromUrl === 'confirmation-sent' ? stateFromUrl :
 		    stateFromUrl === 'login'             ? stateFromUrl :
 			'sign-up';
-		this.setCurrentState(normalized)
+		this.setCurrentState(normalized, false)
 
 
 	}
