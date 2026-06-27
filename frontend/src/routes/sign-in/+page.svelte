@@ -6,32 +6,67 @@
 	import SignInPasswordInput from './_c/SignInPasswordInput.svelte';
 	import SignInUniqueNameInput from './_c/SignInUniqueNameInput.svelte';
 	import { AuthPageState } from './page-state.svelte';
-	import { afterNavigate } from '$app/navigation';
+	import { afterNavigate, onNavigate } from '$app/navigation';
 
 	const pageState = new AuthPageState();
 
-	afterNavigate(({ to }) => {
+	onNavigate(({ to }) => {
+		console.log(to)
 		if (!to?.url) {
 			return;
 		}
 
 		pageState.syncModeFromUrl(to.url);
 	});
+	
 </script>
 
 <main class="min-h-dvh bg-page text-ink">
 	<section class="mx-auto grid min-h-dvh w-full grid-cols-2">
-		<aside class="border-r border-line bg-page block" aria-hidden="true">
+		<aside class="block border-r border-line bg-page" aria-hidden="true">
 			<div class="auth-reserved-panel h-full w-full"></div>
 		</aside>
 
 		<section class="flex items-center justify-center px-6 py-18">
 			<div class="w-full max-w-lg">
-				<h1 class="mb-10 px-2 text-center text-nowrap text-[2.75rem] fs font-semibold leading-none tracking-[-0.02em] text-ink">
+				<h1 class="mb-10 px-2 text-center text-nowrap text-[2.75rem] font-semibold leading-none tracking-[-0.02em] text-ink">
 					{pageState.title}
 				</h1>
-				{#if pageState.current === 'confirmation-sent'}
 
+				{#if pageState.current === 'confirmation-sent'}
+					<div class="rounded-3xl border border-line bg-surface px-7 py-8 text-center">
+						<div class="mx-auto mb-6 flex size-17 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+							<svg
+								class="size-9"
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								aria-hidden="true"
+							>
+								<path
+									d="M5.00035 7L3.78154 7.81253C2.90783 8.39501 2.47097 8.68625 2.23422 9.13041C1.99747 9.57457 1.99923 10.0966 2.00273 11.1406C2.00696 12.3975 2.01864 13.6782 2.05099 14.9741C2.12773 18.0487 2.16611 19.586 3.29651 20.7164C4.42691 21.8469 5.98497 21.8858 9.10108 21.9637C11.0397 22.0121 12.9611 22.0121 14.8996 21.9637C18.0158 21.8858 19.5738 21.8469 20.7042 20.7164C21.8346 19.586 21.873 18.0487 21.9497 14.9741C21.9821 13.6782 21.9937 12.3975 21.998 11.1406C22.0015 10.0966 22.0032 9.57456 21.7665 9.13041C21.5297 8.68625 21.0929 8.39501 20.2191 7.81253L19.0003 7"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M2 10L8.91302 14.1478C10.417 15.0502 11.169 15.5014 12 15.5014C12.831 15.5014 13.583 15.0502 15.087 14.1478L22 10"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M4.99998 12V6C4.99998 4.11438 4.99998 3.17157 5.58577 2.58579C6.17156 2 7.11437 2 8.99998 2H15C16.8856 2 17.8284 2 18.4142 2.58579C19 3.17157 19 4.11438 19 6V12"
+								/>
+								<path d="M10 10H14M10 6H14" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</div>
+
+						<p class="text-lg font-semibold text-ink">We sent you a confirmation email</p>
+
+						<p class="mt-3 text-base leading-7 text-muted">
+							We sent an email to
+							<span class="font-semibold text-ink">{pageState.email}</span>. Follow the link in that email to finish creating your account.
+						</p>
+					</div>
 				{:else}
 					<form onsubmit={(event) => pageState.submit(event)} novalidate>
 						<div class="auth-input-bay" data-mode={pageState.current}>
@@ -52,11 +87,13 @@
 
 						<AuthSubmitButton label={pageState.submitLabel} isLoading={pageState.isLoading} />
 					</form>
+				{/if}
 
-					<div class="mt-4 flex h-10 items-center justify-center">
-						<AuthInlineAction label={pageState.modeActionLabel} action={{ type: 'button', onclick: () => pageState.toggleMode() }} />
-					</div>
+				<div class="mt-4 flex h-10 items-center justify-center">
+					<AuthInlineAction label={pageState.modeActionLabel} action={{ type: 'button', onclick: () => pageState.toggleCurrentState() }} />
+				</div>
 
+				{#if pageState.current !== 'confirmation-sent'}
 					<div
 						class="forgot-row flex h-9 items-center justify-center"
 						data-visible={pageState.current === 'login' ? true : undefined}

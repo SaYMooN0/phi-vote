@@ -23,14 +23,6 @@ function emptyErrors(): PageErrs {
 }
 
 
-function hrefForMode(mode: PageCurrentState, href: string): string {
-	const url = new URL(href, window.location.origin);
-
-	url.searchParams.set('current', mode);
-
-	return `${url.pathname}${url.search}${url.hash}`;
-}
-
 export class AuthPageState {
 	current = $state<PageCurrentState>('sign-up');
 
@@ -59,35 +51,40 @@ export class AuthPageState {
 			() => this.clearFieldErr('password')
 		);
 	}
-	toggleMode() {
-		this.setCurrentState(this.current === 'sign-up' ? 'login' : 'sign-up', true);
+	toggleCurrentState() {
+		this.errors = emptyErrors();
+		if (this.current === 'confirmation-sent') {
+			this.setCurrentState('login');
+			return;
+		}
+		const dest = this.current === 'login' ? 'sign-up' : 'login';
+		this.setCurrentState(dest);
+
 	}
 
-	setCurrentState(mode: PageCurrentState, updateUrl: boolean) {
-		if (this.isLoading || mode === this.current) {
+	setCurrentState(newState: PageCurrentState) {
+		if (this.isLoading || newState === this.current) {
 			return;
 		}
 
 		this.clearErrs();
-		this.current = mode;
-
-		if (updateUrl !== false && browser) {
-			const url = hrefForMode(mode, window.location.href);
+		this.current = newState;
+		if (browser) {
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
-			pushState(url, {});
+			pushState(`${window.location.origin}?current=${this.current}`, {});
 		}
 	}
 
 	syncModeFromUrl(url: URL) {
 		const stateFromUrl = url.searchParams.get('current');
+		console.log(stateFromUrl);
 		if (stateFromUrl === this.current) { return; }
 		const normalized: PageCurrentState =
 			stateFromUrl === 'confirmation-sent' ? stateFromUrl :
-		    stateFromUrl === 'login'             ? stateFromUrl :
-			'sign-up';
-		this.setCurrentState(normalized, false)
-
-
+				stateFromUrl === 'login' ? stateFromUrl :
+					'sign-up';
+		this.current = normalized;
+		console.log(this.current);
 	}
 
 	async submit(event: SubmitEvent) {
